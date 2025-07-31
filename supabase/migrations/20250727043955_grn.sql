@@ -5,7 +5,7 @@ DROP TRIGGER IF EXISTS set_grn_number ON grn;
 DROP FUNCTION IF EXISTS generate_grn_number();
 
 -- Drop existing table if exists
-DROP TABLE IF EXISTS grn;
+DROP TABLE IF EXISTS grn CASCADE;
 
 -- Create category enum type
 DO $$ BEGIN
@@ -19,11 +19,6 @@ CREATE TABLE IF NOT EXISTS grn (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     grn_number TEXT UNIQUE NOT NULL,
     supplier_name TEXT NOT NULL,
-    item TEXT NOT NULL,
-    category crab_category NOT NULL,
-    quantity DECIMAL(10,2) NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    total_value DECIMAL(10,2) NOT NULL,
     delivered_by TEXT NOT NULL,
     received_condition TEXT NOT NULL,
     date DATE NOT NULL,

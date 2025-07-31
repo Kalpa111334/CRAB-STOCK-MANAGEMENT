@@ -328,7 +328,7 @@ const QualityControlDashboard = () => {
                           </Badge>
                         </>
                       )}
-                      {deadCrabsInBox.length > 0 && (
+                      {deadCrabsInBox.length > 0 && selectedBox === boxNumber && (
                         <Badge 
                           variant="destructive"
                           className="text-[6px] sm:text-[8px] px-1 py-0 h-3 sm:h-4 mt-0.5 sm:mt-1"

@@ -47,6 +47,11 @@ export const useDeadCrabs = () => {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Fetch dead crabs when component mounts
+  useEffect(() => {
+    fetchDeadCrabs()
+  }, []) // Empty dependency array means this runs once on mount
+
   const fetchDeadCrabs = async () => {
     try {
       setLoading(true)
