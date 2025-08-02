@@ -26,9 +26,11 @@ const crabStatusOptions = [
 ] as const
 
 const formSchema = z.object({
+  date: z.string().min(1, 'Date is required'),
   supplier: z.string().min(1, 'Supplier is required'),
   box_number: z.string().min(1, 'Box number is required'),
-  weight_kg: z.number().min(0.1, 'Weight must be greater than 0'),
+  weight_kg: z.any(),
+  weight_g: z.any(),
   category: z.enum(['Boil', 'Large', 'XL', 'XXL', 'Jumbo']),
   male_count: z.number().min(0, 'Male count must be 0 or greater'),
   female_count: z.number().min(0, 'Female count must be 0 or greater'),
@@ -54,9 +56,11 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+              date: '',
       supplier: '',
       box_number: '',
       weight_kg: 0,
+      weight_g: 0,
       category: 'Large',
       male_count: 0,
       female_count: 0,
@@ -85,9 +89,10 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
     try {
       const loadingAlert = sweetAlert.loading('Adding new crab entry...')
       await onSubmit({
+        date: data.date, // Use the selected date directly
         supplier: data.supplier,
         box_number: data.box_number,
-        weight_kg: data.weight_kg,
+        weight_kg: Number(data.weight_g) / 1000, // Store exact weight without any rounding
         category: data.category,
         male_count: data.male_count,
         female_count: data.female_count,
@@ -95,7 +100,6 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
         health_status: data.health_status,
         damaged_details: data.damaged_details,
         report_type: data.report_type,
-        date: new Date().toISOString(),
         created_by: user.id
       })
       loadingAlert.close()
@@ -118,6 +122,20 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="supplier"
@@ -146,24 +164,53 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="weight_kg"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Weight (kg)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.1"
-                      {...field}
-                      onChange={e => field.onChange(parseFloat(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="weight_g"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Weight (g)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="Enter weight in grams"
+                        {...field}
+                        onChange={e => {
+                          const gValue = e.target.value;
+                          field.onChange(gValue);
+                          // Convert to kg without validation
+                          const kgValue = gValue ? (parseFloat(gValue) / 1000).toString() : '0';
+                          form.setValue('weight_kg', kgValue);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="weight_kg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Weight (kg)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.1"
+                        readOnly
+                        disabled
+                        value={field.value ? field.value.toString().replace(/\.?0+$/, '') : '0'}
+                        placeholder="Converted to kg"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

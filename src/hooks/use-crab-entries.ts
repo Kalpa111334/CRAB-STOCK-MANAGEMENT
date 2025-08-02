@@ -31,7 +31,7 @@ export function useCrabEntries() {
       const { data, error } = await supabase
         .from('crab_entries')
         .select('*')
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
 
@@ -50,9 +50,16 @@ export function useCrabEntries() {
 
   const addEntry = async (entry: Omit<CrabEntry, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Ensure date and weight are properly formatted
+      const formattedEntry = {
+        ...entry,
+        date: entry.date, // Keep the selected date as is
+        weight_kg: parseFloat(entry.weight_kg.toString()) // Store exact weight value
+      }
+      
       const { data, error } = await supabase
         .from('crab_entries')
-        .insert(entry)
+        .insert(formattedEntry)
         .select()
         .single()
 

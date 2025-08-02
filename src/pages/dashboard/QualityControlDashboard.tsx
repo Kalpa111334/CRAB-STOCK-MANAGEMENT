@@ -93,7 +93,7 @@ const QualityControlDashboard = () => {
         <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
           <h4 style="color: #374151; margin-bottom: 10px;">🦀 Live Crab Entry</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-            <div><strong>Date:</strong> ${new Date(entry.date).toLocaleDateString()}</div>
+            <div><strong>Date:</strong> ${new Date(entry.date).toISOString().split('T')[0]}</div>
             <div><strong>Supplier:</strong> ${entry.supplier}</div>
             <div><strong>Weight:</strong> ${entry.weight_kg} kg</div>
             <div><strong>Category:</strong> ${entry.category}</div>
