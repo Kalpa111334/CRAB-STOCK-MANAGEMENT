@@ -55,7 +55,7 @@ export const CrabEntryForm: React.FC<CrabEntryFormProps> = ({ onSuccess, initial
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<CrabEntryFormData>({
     resolver: zodResolver(crabEntrySchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: '',
       male_count: 0,
       female_count: 0,
       health_status: 'healthy',

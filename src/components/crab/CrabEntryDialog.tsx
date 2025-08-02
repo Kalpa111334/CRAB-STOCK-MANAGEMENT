@@ -92,7 +92,7 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
         date: data.date, // Use the selected date directly
         supplier: data.supplier,
         box_number: data.box_number,
-        weight_kg: Number(data.weight_g) / 1000, // Store exact weight without any rounding
+        weight_kg: data.weight_kg, // Use the already converted weight_kg value
         category: data.category,
         male_count: data.male_count,
         female_count: data.female_count,
@@ -179,8 +179,8 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
                         onChange={e => {
                           const gValue = e.target.value;
                           field.onChange(gValue);
-                          // Convert to kg without validation
-                          const kgValue = gValue ? (parseFloat(gValue) / 1000).toString() : '0';
+                          // Convert to kg and preserve precision
+                          const kgValue = gValue ? Number(gValue) / 1000 : 0;
                           form.setValue('weight_kg', kgValue);
                         }}
                       />

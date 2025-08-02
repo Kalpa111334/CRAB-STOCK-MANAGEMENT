@@ -50,7 +50,7 @@ CREATE TABLE public.crab_entries (
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   supplier TEXT NOT NULL,
   box_number TEXT NOT NULL,
-  weight_kg DECIMAL(10,2) NOT NULL CHECK (weight_kg > 0),
+  weight_kg DECIMAL(10,4) NOT NULL CHECK (weight_kg > 0),
   category crab_category NOT NULL,
   male_count INTEGER NOT NULL DEFAULT 0 CHECK (male_count >= 0),
   female_count INTEGER NOT NULL DEFAULT 0 CHECK (female_count >= 0),

@@ -85,7 +85,7 @@ export const CreateGRNDialog = () => {
         scale: 2,
         backgroundColor: '#ffffff',
       })
-      
+
       const dataUrl = canvas.toDataURL('image/png')
       const link = document.createElement('a')
       link.download = `GRN-${grnData.grn_number}.png`
@@ -115,7 +115,7 @@ export const CreateGRNDialog = () => {
         scale: 2,
         backgroundColor: '#ffffff',
       })
-      
+
       const dataUrl = canvas.toDataURL('image/png')
       const blob = await (await fetch(dataUrl)).blob()
       const file = new File([blob], `GRN-${grnData.grn_number}.png`, { type: 'image/png' })
@@ -224,7 +224,7 @@ export const CreateGRNDialog = () => {
           <>
             <DialogHeader className="sticky top-0 bg-background z-10 pb-4 mb-2">
               <DialogTitle className="text-lg sm:text-xl">Create Goods Received Note</DialogTitle>
-            </DialogHeader>
+        </DialogHeader>
 
             <form onSubmit={handleSubmit} className="grid gap-4">
               {/* Basic Info Section */}
@@ -235,11 +235,11 @@ export const CreateGRNDialog = () => {
                   <div className="space-y-3">
                     <div className="grid gap-1.5">
                       <Label htmlFor="supplier_name">Supplier Name</Label>
-                      <Input
-                        id="supplier_name"
-                        name="supplier_name"
-                        value={formData.supplier_name}
-                        onChange={handleInputChange}
+              <Input
+                id="supplier_name"
+                name="supplier_name"
+                value={formData.supplier_name}
+                onChange={handleInputChange}
                         className="w-full"
                         required
                       />
@@ -279,18 +279,18 @@ export const CreateGRNDialog = () => {
                           value={formData.date}
                           onChange={handleInputChange}
                           className="w-full"
-                          required
-                        />
-                      </div>
+                required
+              />
+            </div>
 
                       <div className="grid gap-1.5">
                         <Label htmlFor="receiving_time">Time</Label>
-                        <Input
+              <Input
                           id="receiving_time"
                           name="receiving_time"
                           type="time"
                           value={formData.receiving_time}
-                          onChange={handleInputChange}
+                onChange={handleInputChange}
                           className="w-full"
                           required
                         />
@@ -343,59 +343,59 @@ export const CreateGRNDialog = () => {
                               value={item.item}
                               onChange={(e) => handleItemChange(index, 'item', e.target.value)}
                               className="w-full"
-                              required
-                            />
-                          </div>
+                required
+              />
+            </div>
 
                           <div className="grid gap-1.5">
                             <Label>Category</Label>
-                            <Select
+              <Select
                               value={item.category}
                               onValueChange={(value) => handleItemChange(index, 'category', value)}
-                            >
+              >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Boil">Boil</SelectItem>
-                                <SelectItem value="Large">Large</SelectItem>
-                                <SelectItem value="XL">XL</SelectItem>
-                                <SelectItem value="XXL">XXL</SelectItem>
-                                <SelectItem value="Jumbo">Jumbo</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Boil">Boil</SelectItem>
+                  <SelectItem value="Large">Large</SelectItem>
+                  <SelectItem value="XL">XL</SelectItem>
+                  <SelectItem value="XXL">XXL</SelectItem>
+                  <SelectItem value="Jumbo">Jumbo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div className="grid gap-1.5">
                               <Label>Pieces</Label>
-                              <Input
-                                type="number"
+              <Input
+                type="number"
                                 value={item.quantity_pieces}
                                 onChange={(e) => handleItemChange(index, 'quantity_pieces', parseInt(e.target.value) || 0)}
                                 className="w-full"
                                 min="0"
-                                required
-                              />
-                            </div>
+                required
+              />
+            </div>
 
                             <div className="grid gap-1.5">
                               <Label>Weight (kg)</Label>
-                              <Input
-                                type="number"
+              <Input
+                type="number"
                                 value={item.quantity_kg}
                                 onChange={(e) => handleItemChange(index, 'quantity_kg', parseFloat(e.target.value) || 0)}
                                 className="w-full"
-                                min="0"
-                                step="0.01"
-                                required
-                              />
-                            </div>
-                          </div>
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            </div>
 
                           <div className="grid gap-1.5">
                             <Label>Price (optional)</Label>
-                            <Input
+              <Input
                               type="number"
                               value={item.price || ''}
                               onChange={(e) => handleItemChange(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
@@ -403,14 +403,14 @@ export const CreateGRNDialog = () => {
                               min="0"
                               step="0.01"
                               placeholder="Enter price (optional)"
-                            />
-                          </div>
+              />
+            </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
+            </div>
 
               <Button 
                 type="submit" 
@@ -426,7 +426,7 @@ export const CreateGRNDialog = () => {
                   'Create GRN'
                 )}
               </Button>
-            </form>
+          </form>
           </>
         ) : (
           <>
@@ -446,12 +446,12 @@ export const CreateGRNDialog = () => {
                     <p><strong>Date:</strong> {format(new Date(grnData?.date || ''), 'dd/MM/yyyy')}</p>
                     <p><strong>Time:</strong> {grnData?.receiving_time}</p>
                     <p><strong>Supplier:</strong> {grnData?.supplier_name}</p>
-                  </div>
-                  <div>
+                </div>
+                <div>
                     <p><strong>Delivered By:</strong> {grnData?.delivered_by}</p>
                     <p><strong>Condition:</strong> {grnData?.received_condition}</p>
                   </div>
-                </div>
+              </div>
 
                 <div className="mt-4">
                   <h3 className="font-semibold mb-2">Items</h3>
@@ -466,9 +466,9 @@ export const CreateGRNDialog = () => {
                           {formData.items.some(item => item.price) && (
                             <th className="p-2 text-right">Price</th>
                           )}
-                        </tr>
-                      </thead>
-                      <tbody>
+                  </tr>
+                </thead>
+                <tbody>
                         {formData.items.map((item, index) => (
                           <tr key={index} className="border-t">
                             <td className="p-2">{item.item}</td>
@@ -480,10 +480,10 @@ export const CreateGRNDialog = () => {
                                 {item.price ? `LKR ${item.price.toFixed(2)}` : '-'}
                               </td>
                             )}
-                          </tr>
+                  </tr>
                         ))}
-                      </tbody>
-                    </table>
+                </tbody>
+              </table>
                   </div>
                 </div>
 
@@ -492,8 +492,8 @@ export const CreateGRNDialog = () => {
                     <div className="mt-16 pt-2 border-t border-dashed">
                       Received By
                     </div>
-                  </div>
-                  <div className="text-center">
+                </div>
+                <div className="text-center">
                     <div className="mt-16 pt-2 border-t border-dashed">
                       Authorized By
                     </div>
@@ -520,7 +520,7 @@ export const CreateGRNDialog = () => {
                   <Share2 className="h-4 w-4 mr-2" />
                   Share
                 </Button>
-              </div>
+            </div>
             </div>
           </>
         )}
