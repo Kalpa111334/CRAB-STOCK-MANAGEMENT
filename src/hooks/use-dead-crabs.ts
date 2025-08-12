@@ -81,6 +81,7 @@ export const useDeadCrabs = () => {
         throw new Error('User not authenticated')
       }
 
+<<<<<<< HEAD
       // Check user role before attempting to insert
       const { data: userProfile, error: userError } = await supabase
         .from('users')
@@ -130,13 +131,23 @@ export const useDeadCrabs = () => {
       if (isNaN(data.weight_kg) || data.weight_kg <= 0) {
         throw new Error('Weight must be a positive number')
       }
+=======
+      setLoading(true)
+      
+      // Format the time to ensure it matches PostgreSQL time format
+      const formattedTime = data.time + ':00' // Add seconds if not present
+>>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
 
       const { error } = await supabase
         .from('dead_crabs')
         .insert({
           box_number: data.box_number,
           category: data.category as 'Boil' | 'Large' | 'XL' | 'XXL' | 'Jumbo',
+<<<<<<< HEAD
           weight_kg: parseFloat(data.weight_kg.toString()),
+=======
+          weight_kg: data.weight_kg,
+>>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
           time: formattedTime,
           cause_of_death: data.cause_of_death,
           notes: data.notes,
@@ -149,8 +160,11 @@ export const useDeadCrabs = () => {
           throw new Error('You do not have permission to record dead crabs')
         } else if (error.code === '23502') {
           throw new Error('Missing required fields')
+<<<<<<< HEAD
         } else if (error.code === '23503') {
           throw new Error('Invalid user reference')
+=======
+>>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
         } else {
           throw new Error(error.message)
         }
@@ -167,7 +181,11 @@ export const useDeadCrabs = () => {
       console.error('Error adding dead crab:', error)
       toast({
         title: 'Error',
+<<<<<<< HEAD
         description: error.message || 'Failed to record dead crab',
+=======
+        description: error.message || 'Failed to record dead crab entry',
+>>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
         variant: 'destructive',
       })
       throw error
