@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from 'react'
 
 const SaleDashboard: React.FC = () => {
@@ -53,7 +52,7 @@ const SaleDashboard: React.FC = () => {
           borderRadius: '8px',
           padding: '20px'
         }}>
-          <h3 style={{ color: '#856404', marginBottom: '10px' }}>
+          <h3 style={{ color: '#856404', marginBottom: '5px' }}>
             🔍 Debug Information
           </h3>
           <p style={{ color: '#856404', marginBottom: '5px' }}>
@@ -90,14 +89,6 @@ const SaleDashboard: React.FC = () => {
           </button>
         </div>
       </div>
-=======
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DollarSign, ShoppingBag, Users, TrendingUp, Eye, Edit, Trash2 } from 'lucide-react'
-import { NewSaleForm } from '@/components/sale/NewSaleForm'
 import { EditSaleForm } from '@/components/sale/EditSaleForm'
 import { salesService } from '@/services/sales.service'
 import { Sale } from '@/types/database'

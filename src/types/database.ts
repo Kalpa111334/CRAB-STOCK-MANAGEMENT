@@ -90,7 +90,6 @@ export interface Sale {
   customer_email: string | null
   date: string
   total_amount: number
-<<<<<<< HEAD
   payment_method: string
   notes: string | null
   status: string
@@ -98,14 +97,6 @@ export interface Sale {
   created_at: string
   updated_at: string
   items?: any
-=======
-  payment_method: 'cash' | 'credit_card' | 'bank_transfer'
-  notes: string | null
-  status: 'pending' | 'completed' | 'cancelled'
-  created_by: string
-  created_at: string
-  updated_at: string
->>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
 }
 
 export interface PurchaseStats {

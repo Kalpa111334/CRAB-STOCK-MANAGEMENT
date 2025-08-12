@@ -74,19 +74,11 @@ export const DeadCrabEntryDialog: React.FC<DeadCrabEntryDialogProps> = ({
         title: "Success",
         description: "Dead crab recorded successfully"
       })
-<<<<<<< HEAD
     } catch (error: any) {
       console.error('Error submitting dead crab entry:', error)
       toast({
         title: "Error",
         description: error.message || "Failed to record dead crab",
-=======
-    } catch (error) {
-      console.error('Error submitting dead crab entry:', error)
-      toast({
-        title: "Error",
-        description: "Failed to record dead crab",
->>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
         variant: "destructive"
       })
     } finally {
