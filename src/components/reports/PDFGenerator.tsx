@@ -284,7 +284,7 @@ export const PDFGenerator: React.FC<PDFGeneratorProps> = ({ reportType }) => {
 
       const totalDamagedCrabs = damagedCrabEntries?.length || 0
       const totalDamagedWeight = damagedCrabEntries?.reduce((sum, entry) => sum + entry.weight_kg, 0) || 0
->>>>>>> 483f8ec9a4073a43c62de95fd888e77f9b5f9d52
+
       let message = `*${reportTitle}*\n`
       message += `📅 Date: ${currentDate}\n\n`
       message += `📊 *TOTAL STOCK SUMMARY*\n`
