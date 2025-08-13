@@ -86,13 +86,21 @@ const PurchasingDashboard = () => {
         avgCostPerKg = totalCost / totalQuantity
       }
 
-      const currentMonthStats = currentData?.reduce((acc, curr) => ({
-        total: acc.total + (curr.total_amount || 0)
-      }), { total: 0 })
+      const currentMonthStats = currentData?.reduce((acc, purchase) => {
+        const items = purchase.items as any[] || []
+        const calculatedTotal = items.reduce((total, item) => total + (item.total_price || 0), 0)
+        return {
+          total: acc.total + calculatedTotal
+        }
+      }, { total: 0 })
 
-      const previousMonthStats = previousData?.reduce((acc, curr) => ({
-        total: acc.total + (curr.total_amount || 0)
-      }), { total: 0 })
+      const previousMonthStats = previousData?.reduce((acc, purchase) => {
+        const items = purchase.items as any[] || []
+        const calculatedTotal = items.reduce((total, item) => total + (item.total_price || 0), 0)
+        return {
+          total: acc.total + calculatedTotal
+        }
+      }, { total: 0 })
 
       setStats({
         total_amount: currentMonthStats?.total || 0,
@@ -232,6 +240,15 @@ const PurchasingDashboard = () => {
         {item.quantity_kg} kg × LKR {item.unit_price}/kg
       </div>
     )
+  }
+
+  const calculatePurchaseTotal = (purchase: Purchase) => {
+    const items = purchase.items as any[] || []
+    if (items.length === 0) return 0
+    
+    return items.reduce((total, item) => {
+      return total + (item.total_price || 0)
+    }, 0)
   }
 
   return (
@@ -402,8 +419,8 @@ const PurchasingDashboard = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-sm">PO-{purchase.id.slice(0, 8)}</span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${getPurchaseStatusColor(purchase.total_amount)}`}>
-                              {formatCurrency(purchase.total_amount || 0, 'LKR')}
+                            <span className={`text-xs px-2 py-1 rounded-full ${getPurchaseStatusColor(calculatePurchaseTotal(purchase))}`}>
+                              {formatCurrency(calculatePurchaseTotal(purchase), 'LKR')}
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mb-1">{purchase.supplier_name}</p>
