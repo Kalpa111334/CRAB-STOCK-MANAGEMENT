@@ -13,18 +13,18 @@ import { PurchaseOrderPreview } from '@/components/purchase/PurchaseOrderPreview
 
 // Currency conversion function
 const convertToLKR = (amount: number, rate: number = 308) => {
-  return amount * rate;
+  return amount * rate
 }
 
-// Currency formatting function
-const formatCurrency = (amount: number, currency: 'USD' | 'LKR' = 'LKR') => {
-  const convertedAmount = currency === 'LKR' ? convertToLKR(amount) : amount;
+// Currency formatting function (always display in LKR; convert only if source is USD)
+const formatCurrency = (amount: number, sourceCurrency: 'USD' | 'LKR' = 'LKR') => {
+  const valueInLKR = sourceCurrency === 'USD' ? convertToLKR(amount) : amount
   return new Intl.NumberFormat('en-LK', {
     style: 'currency',
-    currency: currency,
+    currency: 'LKR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(convertedAmount);
+  }).format(valueInLKR)
 }
 
 const PurchasingDashboard = () => {
