@@ -246,9 +246,15 @@ const PurchasingDashboard = () => {
     const items = purchase.items as any[] || []
     if (items.length === 0) return 0
     
-    return items.reduce((total, item) => {
+    console.log('Calculating total for purchase:', purchase.id, 'Items:', items)
+    
+    const total = items.reduce((total, item) => {
+      console.log('Item:', item, 'total_price:', item.total_price)
       return total + (item.total_price || 0)
     }, 0)
+    
+    console.log('Calculated total:', total, 'vs stored total_amount:', purchase.total_amount)
+    return total
   }
 
   return (
@@ -402,10 +408,24 @@ const PurchasingDashboard = () => {
           {/* Recent Orders */}
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                Recent Purchase Orders
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                  <CardTitle>Recent Purchase Orders</CardTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fetchRecentPurchases()
+                    fetchStats()
+                  }}
+                  className="h-8 px-3"
+                >
+                  <Loader2 className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
               <CardDescription>Latest procurement activities with detailed breakdowns</CardDescription>
             </CardHeader>
             <CardContent>
