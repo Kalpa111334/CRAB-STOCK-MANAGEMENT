@@ -254,11 +254,21 @@ const PurchasingDashboard = () => {
                 {formatCurrency(stats?.monthly_total || 0, 'LKR')}
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats?.monthly_orders || 0} orders this month
+                Total prices of {stats?.monthly_orders || 0} purchase orders
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {getPercentageChange(stats?.monthly_total || 0, stats?.previous_monthly_total || 0)}% from last month
               </p>
+              {stats?.monthly_orders > 0 && (
+                <div className="mt-2 pt-2 border-t border-primary/20">
+                  <p className="text-xs text-primary/70">
+                    <span className="font-medium">Breakdown:</span> {stats.monthly_orders} orders placed
+                  </p>
+                  <p className="text-xs text-primary/70">
+                    <span className="font-medium">Average:</span> {formatCurrency((stats?.monthly_total || 0) / (stats?.monthly_orders || 1), 'LKR')} per order
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -312,7 +322,7 @@ const PurchasingDashboard = () => {
               <ShoppingCart className="h-5 w-5 text-primary" />
               Monthly Purchase Summary
             </CardTitle>
-            <CardDescription>Detailed breakdown of this month's purchasing activities</CardDescription>
+            <CardDescription>Total prices and breakdown of purchase orders placed this month</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -320,9 +330,9 @@ const PurchasingDashboard = () => {
                 <div className="text-3xl font-bold text-primary mb-2">
                   {formatCurrency(stats?.monthly_total || 0, 'LKR')}
                 </div>
-                <p className="text-sm font-medium text-primary">Total Amount</p>
+                <p className="text-sm font-medium text-primary">Total Purchase Order Prices</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total value of all purchase orders
+                  Sum of all purchase order totals
                 </p>
               </div>
               
@@ -330,9 +340,9 @@ const PurchasingDashboard = () => {
                 <div className="text-3xl font-bold text-success mb-2">
                   {stats?.monthly_orders || 0}
                 </div>
-                <p className="text-sm font-medium text-success">Orders Placed</p>
+                <p className="text-sm font-medium text-success">Purchase Orders Placed</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Number of purchase orders created
+                  Number of orders created this month
                 </p>
               </div>
               
@@ -343,26 +353,26 @@ const PurchasingDashboard = () => {
                     : 'LKR 0.00'
                   }
                 </div>
-                <p className="text-sm font-medium text-warning">Average Order Value</p>
+                <p className="text-sm font-medium text-warning">Average Order Price</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Per purchase order average
+                  Average total price per order
                 </p>
               </div>
             </div>
             
             {stats?.monthly_orders > 0 && (
               <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-medium text-sm mb-3">Monthly Overview</h4>
+                <h4 className="font-medium text-sm mb-3">Purchase Order Price Summary</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p><span className="font-medium">Total Purchase Orders:</span> {stats.monthly_orders}</p>
-                    <p><span className="font-medium">Total Amount Spent:</span> {formatCurrency(stats.monthly_total, 'LKR')}</p>
+                    <p><span className="font-medium">Total Prices:</span> {formatCurrency(stats.monthly_total, 'LKR')}</p>
                     <p><span className="font-medium">Total Quantity:</span> {stats.total_quantity?.toFixed(2) || 0} kg</p>
                   </div>
                   <div>
-                    <p><span className="font-medium">Average Order Value:</span> {formatCurrency(stats.monthly_total / stats.monthly_orders, 'LKR')}</p>
+                    <p><span className="font-medium">Average Order Price:</span> {formatCurrency(stats.monthly_total / stats.monthly_orders, 'LKR')}</p>
                     <p><span className="font-medium">Average Cost per kg:</span> {formatCurrency(stats.average_cost_per_kg || 0, 'LKR')}</p>
-                    <p><span className="font-medium">Previous Month:</span> {formatCurrency(stats.previous_monthly_total || 0, 'LKR')}</p>
+                    <p><span className="font-medium">Previous Month Total:</span> {formatCurrency(stats.previous_monthly_total || 0, 'LKR')}</p>
                   </div>
                 </div>
               </div>
