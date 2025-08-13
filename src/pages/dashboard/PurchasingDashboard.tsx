@@ -254,6 +254,9 @@ const PurchasingDashboard = () => {
                 {formatCurrency(stats?.monthly_total || 0, 'LKR')}
               </div>
               <p className="text-xs text-muted-foreground">
+                {stats?.monthly_orders || 0} orders this month
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
                 {getPercentageChange(stats?.monthly_total || 0, stats?.previous_monthly_total || 0)}% from last month
               </p>
             </CardContent>
@@ -266,7 +269,12 @@ const PurchasingDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-success">{stats?.monthly_orders || 0}</div>
-              <p className="text-xs text-muted-foreground">This month</p>
+              <p className="text-xs text-muted-foreground">Purchase orders placed</p>
+              {stats?.monthly_orders > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Avg: {formatCurrency((stats?.monthly_total || 0) / (stats?.monthly_orders || 1), 'LKR')}
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -297,6 +305,71 @@ const PurchasingDashboard = () => {
           </Card>
         </div>
 
+        {/* Monthly Purchase Summary */}
+        <Card className="shadow-md mb-6 sm:mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              Monthly Purchase Summary
+            </CardTitle>
+            <CardDescription>Detailed breakdown of this month's purchasing activities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-primary/5 rounded-lg">
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {formatCurrency(stats?.monthly_total || 0, 'LKR')}
+                </div>
+                <p className="text-sm font-medium text-primary">Total Amount</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total value of all purchase orders
+                </p>
+              </div>
+              
+              <div className="text-center p-4 bg-success/5 rounded-lg">
+                <div className="text-3xl font-bold text-success mb-2">
+                  {stats?.monthly_orders || 0}
+                </div>
+                <p className="text-sm font-medium text-success">Orders Placed</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Number of purchase orders created
+                </p>
+              </div>
+              
+              <div className="text-center p-4 bg-warning/5 rounded-lg">
+                <div className="text-3xl font-bold text-warning mb-2">
+                  {stats?.monthly_orders > 0 
+                    ? formatCurrency((stats?.monthly_total || 0) / (stats?.monthly_orders || 1), 'LKR')
+                    : 'LKR 0.00'
+                  }
+                </div>
+                <p className="text-sm font-medium text-warning">Average Order Value</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Per purchase order average
+                </p>
+              </div>
+            </div>
+            
+            {stats?.monthly_orders > 0 && (
+              <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium text-sm mb-3">Monthly Overview</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><span className="font-medium">Total Purchase Orders:</span> {stats.monthly_orders}</p>
+                    <p><span className="font-medium">Total Amount Spent:</span> {formatCurrency(stats.monthly_total, 'LKR')}</p>
+                    <p><span className="font-medium">Total Quantity:</span> {stats.total_quantity?.toFixed(2) || 0} kg</p>
+                  </div>
+                  <div>
+                    <p><span className="font-medium">Average Order Value:</span> {formatCurrency(stats.monthly_total / stats.monthly_orders, 'LKR')}</p>
+                    <p><span className="font-medium">Average Cost per kg:</span> {formatCurrency(stats.average_cost_per_kg || 0, 'LKR')}</p>
+                    <p><span className="font-medium">Previous Month:</span> {formatCurrency(stats.previous_monthly_total || 0, 'LKR')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Recent Orders */}
@@ -306,7 +379,7 @@ const PurchasingDashboard = () => {
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 Recent Purchase Orders
               </CardTitle>
-              <CardDescription>Latest procurement activities</CardDescription>
+              <CardDescription>Latest procurement activities with detailed breakdowns</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -314,30 +387,54 @@ const PurchasingDashboard = () => {
                   <p className="text-center text-muted-foreground py-4">No recent purchases</p>
                 ) : (
                   recentPurchases.map((purchase) => (
-                    <div key={purchase.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">PO-{purchase.id.slice(0, 8)}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${getPurchaseStatusColor(purchase.total_amount)}`}>
-                            {formatCurrency(purchase.total_amount || 0, 'LKR')}
-                          </span>
+                    <div key={purchase.id} className="p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-medium text-sm">PO-{purchase.id.slice(0, 8)}</span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${getPurchaseStatusColor(purchase.total_amount)}`}>
+                              {formatCurrency(purchase.total_amount || 0, 'LKR')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">{purchase.supplier_name}</p>
+                          {renderPurchaseCalculation(purchase)}
                         </div>
-                        <p className="text-sm text-muted-foreground">{purchase.supplier_name}</p>
-                        {renderPurchaseCalculation(purchase)}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePreviewPurchase(purchase)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(purchase.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handlePreviewPurchase(purchase)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(purchase.created_at), 'MMM d, yyyy')}
-                          </p>
+                      
+                      {/* Order Details Summary */}
+                      <div className="bg-muted/20 rounded p-3 text-xs">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p><span className="font-medium">Order Date:</span> {format(new Date(purchase.date), 'dd/MM/yyyy')}</p>
+                            <p><span className="font-medium">Delivery:</span> {format(new Date(purchase.delivery_date), 'dd/MM/yyyy')}</p>
+                          </div>
+                          <div>
+                            <p><span className="font-medium">Status:</span> 
+                              <span className={`ml-1 px-2 py-1 rounded-full text-xs ${
+                                purchase.status === 'completed' ? 'bg-success/20 text-success' :
+                                purchase.status === 'pending' ? 'bg-warning/20 text-warning' :
+                                'bg-muted text-muted-foreground'
+                              }`}>
+                                {purchase.status}
+                              </span>
+                            </p>
+                            <p><span className="font-medium">Currency:</span> {purchase.currency}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
