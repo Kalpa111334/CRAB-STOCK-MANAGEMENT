@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart, TrendingUp, Package, DollarSign, Truck, Calendar, Loader2 } from 'lucide-react'
+import { ShoppingCart, TrendingUp, Package, DollarSign, Truck, Calendar, Loader2, Eye, Calculator } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { Purchase, PurchaseStats, Supplier } from '@/types/database'
 import { useSweetAlert } from '@/hooks/use-sweet-alert'
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import SupplierManagement from '@/components/supplier/SupplierManagement'
+import { PurchaseOrderPreview } from '@/components/purchase/PurchaseOrderPreview'
 
 // Currency conversion function
 const convertToLKR = (amount: number, rate: number = 308) => {
@@ -32,6 +33,8 @@ const PurchasingDashboard = () => {
   const [recentPurchases, setRecentPurchases] = useState<Purchase[]>([])
   const [topSuppliers, setTopSuppliers] = useState<Supplier[]>([])
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false)
+  const [previewPurchase, setPreviewPurchase] = useState<Purchase | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
   const sweetAlert = useSweetAlert()
   const navigate = useNavigate()
 
@@ -43,7 +46,7 @@ const PurchasingDashboard = () => {
       // Current month purchases
       const { data: currentData, error: currentError } = await supabase
         .from('purchases')
-        .select('total_amount')
+        .select('total_amount, items')
         .gte('date', startOfMonth(currentMonth).toISOString())
         .lte('date', endOfMonth(currentMonth).toISOString())
 
@@ -52,7 +55,7 @@ const PurchasingDashboard = () => {
       // Previous month purchases
       const { data: previousData, error: previousError } = await supabase
         .from('purchases')
-        .select('total_amount')
+        .select('total_amount, items')
         .gte('date', startOfMonth(previousMonth).toISOString())
         .lte('date', endOfMonth(previousMonth).toISOString())
 
@@ -66,7 +69,23 @@ const PurchasingDashboard = () => {
 
       if (suppliersError) throw suppliersError
 
-      // Calculate statistics
+      // Calculate statistics including average cost per kg
+      let totalQuantity = 0
+      let totalCost = 0
+      let avgCostPerKg = 0
+
+      currentData?.forEach(purchase => {
+        const items = purchase.items as any[] || []
+        items.forEach(item => {
+          totalQuantity += item.quantity_kg || 0
+          totalCost += item.total_price || 0
+        })
+      })
+
+      if (totalQuantity > 0) {
+        avgCostPerKg = totalCost / totalQuantity
+      }
+
       const currentMonthStats = currentData?.reduce((acc, curr) => ({
         total: acc.total + (curr.total_amount || 0)
       }), { total: 0 })
@@ -77,16 +96,16 @@ const PurchasingDashboard = () => {
 
       setStats({
         total_amount: currentMonthStats?.total || 0,
-        avg_unit_price: 0, // Will calculate from individual items if needed
-        total_quantity: 0, // Will calculate from individual items if needed
+        avg_unit_price: avgCostPerKg,
+        total_quantity: totalQuantity,
         order_count: currentData?.length || 0,
         month: new Date().toISOString(),
         monthly_total: currentMonthStats?.total || 0,
         monthly_orders: currentData?.length || 0,
         active_suppliers: activeSuppliers || 0,
-        average_cost_per_kg: 0, // Will calculate from individual items if needed
+        average_cost_per_kg: avgCostPerKg,
         previous_monthly_total: previousMonthStats?.total || 0,
-        previous_average_cost: 0 // Will calculate from individual items if needed
+        previous_average_cost: 0 // Will calculate if needed
       })
     } catch (error) {
       console.error('Error fetching stats:', error)
@@ -169,6 +188,16 @@ const PurchasingDashboard = () => {
     navigate('/purchase-analytics')
   }
 
+  const handlePreviewPurchase = (purchase: Purchase) => {
+    setPreviewPurchase(purchase)
+    setShowPreview(true)
+  }
+
+  const handleClosePreview = () => {
+    setShowPreview(false)
+    setPreviewPurchase(null)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -190,6 +219,19 @@ const PurchasingDashboard = () => {
     if (amount > 2000) return 'bg-primary/20 text-primary'
     if (amount > 1000) return 'bg-warning/20 text-warning'
     return 'bg-muted text-muted-foreground'
+  }
+
+  const renderPurchaseCalculation = (purchase: Purchase) => {
+    const items = purchase.items as any[] || []
+    if (items.length === 0) return null
+
+    const item = items[0]
+    return (
+      <div className="text-xs text-muted-foreground mt-1">
+        <Calculator className="h-3 w-3 inline mr-1" />
+        {item.quantity_kg} kg × LKR {item.unit_price}/kg
+      </div>
+    )
   }
 
   return (
@@ -281,11 +323,22 @@ const PurchasingDashboard = () => {
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">{purchase.supplier_name}</p>
+                        {renderPurchaseCalculation(purchase)}
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(purchase.created_at), 'MMM d, yyyy')}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreviewPurchase(purchase)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(purchase.created_at), 'MMM d, yyyy')}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -385,6 +438,15 @@ const PurchasingDashboard = () => {
           <SupplierManagement />
         </DialogContent>
       </Dialog>
+
+      {/* Purchase Order Preview */}
+      {previewPurchase && (
+        <PurchaseOrderPreview
+          purchase={previewPurchase}
+          isOpen={showPreview}
+          onClose={handleClosePreview}
+        />
+      )}
     </div>
   )
 }

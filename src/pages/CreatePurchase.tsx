@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client'
 import { useSweetAlert } from '@/hooks/use-sweet-alert'
 import { useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Calculator } from 'lucide-react'
+import { PurchaseOrderPreview } from '@/components/purchase/PurchaseOrderPreview'
+import { Purchase } from '@/types/database'
 
 interface PurchaseFormData {
   supplier_name: string
@@ -26,8 +28,14 @@ const CreatePurchase = () => {
     pieces_count: 0,
     unit_price: 0
   })
+  const [showPreview, setShowPreview] = useState(false)
+  const [createdPurchase, setCreatedPurchase] = useState<Purchase | null>(null)
   const sweetAlert = useSweetAlert()
   const navigate = useNavigate()
+
+  const calculateTotal = () => {
+    return formData.quantity_kg * formData.unit_price
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +50,7 @@ const CreatePurchase = () => {
       const { data: userData, error: userError } = await supabase.auth.getUser()
       if (userError) throw userError
 
-      const totalAmount = formData.quantity_kg * formData.unit_price
+      const totalAmount = calculateTotal()
       
       const purchaseData = {
         date: new Date().toISOString().split('T')[0],
@@ -68,14 +76,19 @@ const CreatePurchase = () => {
         payment_terms: 'Net 30'
       }
 
-      const { error: purchaseError } = await supabase
+      const { data: purchaseResult, error: purchaseError } = await supabase
         .from('purchases')
         .insert([purchaseData])
+        .select()
+        .single()
 
       if (purchaseError) throw purchaseError
 
-      sweetAlert.success('Purchase order created successfully')
-      navigate('/dashboard/purchasing')
+      // Set the created purchase and show preview
+      setCreatedPurchase(purchaseResult)
+      setShowPreview(true)
+      
+      sweetAlert.success('Purchase order created successfully! Preview is now available.')
     } catch (error) {
       console.error('Error creating purchase:', error)
       sweetAlert.error(error instanceof Error ? error.message : 'Failed to create purchase order')
@@ -89,6 +102,12 @@ const CreatePurchase = () => {
       ...prev,
       [field]: value
     }))
+  }
+
+  const handleClosePreview = () => {
+    setShowPreview(false)
+    setCreatedPurchase(null)
+    navigate('/dashboard/purchasing')
   }
 
   return (
@@ -142,7 +161,7 @@ const CreatePurchase = () => {
                   min="0"
                   step="0.01"
                   value={formData.quantity_kg}
-                  onChange={(e) => handleChange('quantity_kg', parseFloat(e.target.value))}
+                  onChange={(e) => handleChange('quantity_kg', parseFloat(e.target.value) || 0)}
                   placeholder="Enter quantity in kg"
                 />
               </div>
@@ -154,7 +173,7 @@ const CreatePurchase = () => {
                   type="number"
                   min="0"
                   value={formData.pieces_count}
-                  onChange={(e) => handleChange('pieces_count', parseInt(e.target.value))}
+                  onChange={(e) => handleChange('pieces_count', parseInt(e.target.value) || 0)}
                   placeholder="Enter number of pieces"
                 />
               </div>
@@ -168,10 +187,29 @@ const CreatePurchase = () => {
                 min="0"
                 step="0.01"
                 value={formData.unit_price}
-                onChange={(e) => handleChange('unit_price', parseFloat(e.target.value))}
+                onChange={(e) => handleChange('unit_price', parseFloat(e.target.value) || 0)}
                 placeholder="Enter unit price"
               />
             </div>
+
+            {/* Calculation Display */}
+            {(formData.quantity_kg > 0 && formData.unit_price > 0) && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-blue-800">Price Calculation</span>
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    <p><strong>Quantity:</strong> {formData.quantity_kg} kg</p>
+                    <p><strong>Unit Price:</strong> LKR {formData.unit_price} per kg</p>
+                    <p className="text-lg font-semibold mt-2">
+                      <strong>Total:</strong> {formData.quantity_kg} kg × LKR {formData.unit_price} = LKR {calculateTotal().toFixed(2)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="pt-4">
               <Button 
@@ -192,6 +230,15 @@ const CreatePurchase = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Purchase Order Preview */}
+      {createdPurchase && (
+        <PurchaseOrderPreview
+          purchase={createdPurchase}
+          isOpen={showPreview}
+          onClose={handleClosePreview}
+        />
+      )}
     </div>
   )
 }
