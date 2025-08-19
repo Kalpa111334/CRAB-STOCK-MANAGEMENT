@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ShoppingCart, TrendingUp, Package, DollarSign, Truck, Calendar, Loader2, Eye, Calculator } from 'lucide-react'
+import { ShoppingCart, TrendingUp, Package, DollarSign, Truck, Calendar, Loader2, Eye, Calculator, Edit, Trash2 } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { Purchase, PurchaseStats, Supplier } from '@/types/database'
 import { useSweetAlert } from '@/hooks/use-sweet-alert'
@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
 import SupplierManagement from '@/components/supplier/SupplierManagement'
 import { PurchaseOrderPreview } from '@/components/purchase/PurchaseOrderPreview'
+import { EditPurchaseOrderDialog } from '@/components/purchase/EditPurchaseOrderDialog'
+import { DeletePurchaseOrderDialog } from '@/components/purchase/DeletePurchaseOrderDialog'
 
 // Currency conversion function
 const convertToLKR = (amount: number, rate: number = 308) => {
@@ -35,6 +37,10 @@ const PurchasingDashboard = () => {
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false)
   const [previewPurchase, setPreviewPurchase] = useState<Purchase | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [editPurchase, setEditPurchase] = useState<Purchase | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [deletePurchase, setDeletePurchase] = useState<Purchase | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const sweetAlert = useSweetAlert()
   const navigate = useNavigate()
 
@@ -204,6 +210,38 @@ const PurchasingDashboard = () => {
   const handleClosePreview = () => {
     setShowPreview(false)
     setPreviewPurchase(null)
+  }
+
+  const handleEditPurchase = (purchase: Purchase) => {
+    setEditPurchase(purchase)
+    setShowEditDialog(true)
+  }
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false)
+    setEditPurchase(null)
+  }
+
+  const handleEditSaved = () => {
+    // Refresh the data after successful edit
+    fetchRecentPurchases()
+    fetchStats()
+  }
+
+  const handleDeletePurchase = (purchase: Purchase) => {
+    setDeletePurchase(purchase)
+    setShowDeleteDialog(true)
+  }
+
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false)
+    setDeletePurchase(null)
+  }
+
+  const handleDeleteConfirmed = () => {
+    // Refresh the data after successful deletion
+    fetchRecentPurchases()
+    fetchStats()
   }
 
   if (loading) {
@@ -452,10 +490,29 @@ const PurchasingDashboard = () => {
                             size="sm"
                             onClick={() => handlePreviewPurchase(purchase)}
                             className="h-8 w-8 p-0"
+                            title="Preview Purchase Order"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <div className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPurchase(purchase)}
+                            className="h-8 w-8 p-0"
+                            title="Edit Purchase Order"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePurchase(purchase)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            title="Delete Purchase Order"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <div className="text-right ml-2">
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(purchase.created_at), 'MMM d, yyyy')}
                             </p>
@@ -591,6 +648,22 @@ const PurchasingDashboard = () => {
           onClose={handleClosePreview}
         />
       )}
+
+      {/* Edit Purchase Order Dialog */}
+      <EditPurchaseOrderDialog
+        purchase={editPurchase}
+        isOpen={showEditDialog}
+        onClose={handleCloseEditDialog}
+        onSaved={handleEditSaved}
+      />
+
+      {/* Delete Purchase Order Dialog */}
+      <DeletePurchaseOrderDialog
+        purchase={deletePurchase}
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onDeleted={handleDeleteConfirmed}
+      />
     </div>
   )
 }
