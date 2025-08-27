@@ -237,8 +237,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
 
-  const getDashboardRoute = () => {
-    switch (user.role) {
+  const getDashboardRoute = (userRole: UserRole) => {
+    switch (userRole) {
       case 'admin':
         return '/admin';
       case 'quality_control':
@@ -246,7 +246,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       case 'purchasing':
         return '/dashboard/purchasing';
       case 'sale':
-        return '/dashboard/sale';
+        return '/sale';
       default:
         return '/auth';
     }

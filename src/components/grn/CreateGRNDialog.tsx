@@ -387,7 +387,7 @@ export const CreateGRNDialog = () => {
                                 onChange={(e) => handleItemChange(index, 'quantity_kg', parseFloat(e.target.value) || 0)}
                                 className="w-full"
                 min="0"
-                step="0.01"
+                step="0.001"
                 required
               />
             </div>
@@ -474,7 +474,7 @@ export const CreateGRNDialog = () => {
                             <td className="p-2">{item.item}</td>
                             <td className="p-2">{item.category}</td>
                             <td className="p-2 text-right">{item.quantity_pieces}</td>
-                            <td className="p-2 text-right">{item.quantity_kg}</td>
+                            <td className="p-2 text-right">{item.quantity_kg.toString()}</td>
                             {formData.items.some(item => item.price) && (
                               <td className="p-2 text-right">
                                 {item.price ? `LKR ${item.price.toFixed(2)}` : '-'}

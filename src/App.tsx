@@ -85,7 +85,7 @@ const AppRoutes = () => {
       case 'purchasing':
         return '/dashboard/purchasing';
       case 'sale':
-        return '/dashboard/sale';
+        return '/sale';
       default:
         return '/auth';
     }
@@ -127,6 +127,14 @@ const AppRoutes = () => {
 
         <Route 
           path="/dashboard/sale" 
+          element={
+            <ProtectedRoute allowedRoles={['sale', 'admin']}>
+              <SaleDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/sale" 
           element={
             <ProtectedRoute allowedRoles={['sale', 'admin']}>
               <SaleDashboard />

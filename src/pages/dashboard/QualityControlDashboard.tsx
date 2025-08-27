@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Package, AlertTriangle, CheckCircle, Grid3X3, FileText, Share2, Loader2, Skull, Send } from 'lucide-react'
+import { Plus, Package, AlertTriangle, CheckCircle, Grid3X3, FileText, Share2, Loader2, Skull, Send, ArrowDownToLine } from 'lucide-react'
 import { CrabEntryDialog } from '@/components/crab/CrabEntryDialog'
 import { DeadCrabEntryDialog } from '@/components/crab/DeadCrabEntryDialog'
 import { DamageCrabEntryDialog } from '@/components/crab/DamageCrabEntryDialog'
-import { CrabStockReleasingDialog } from '@/components/crab/CrabStockReleasingDialog'
+import { StockReleaseDialog } from '@/components/stock/StockReleaseDialog'
+import { BulkStockReleaseDialog } from '@/components/stock/BulkStockReleaseDialog'
+import { StockLevelCard } from '@/components/stock/StockLevelCard'
+import { stockService } from '@/services/stock.service'
+import type { StockLevel, StockAlert } from '@/services/stock.service'
 import { useCrabEntries } from '@/hooks/use-crab-entries'
 import { useDeadCrabs } from '@/hooks/use-dead-crabs'
 import { useDamagedCrabs } from '@/hooks/use-damaged-crabs'
@@ -21,12 +25,37 @@ import { CreateGRNDialog } from '@/components/grn/CreateGRNDialog'
 const QualityControlDashboard = () => {
   const [selectedBox, setSelectedBox] = useState<string | null>(null)
   const [releasedBoxes, setReleasedBoxes] = useState<Set<string>>(new Set())
+  const [stockLevels, setStockLevels] = useState<StockLevel[]>([])
+  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([])
+  const [showReleaseDialog, setShowReleaseDialog] = useState(false)
+  const [showBulkReleaseDialog, setShowBulkReleaseDialog] = useState(false)
+  const [selectedBoxesForRelease, setSelectedBoxesForRelease] = useState<string[]>([])
   const { entries, loading, addEntry } = useCrabEntries()
   const { entries: deadCrabEntries, addDeadCrab, loading: loadingDeadCrabs } = useDeadCrabs()
   const { entries: damagedCrabEntries, addDamagedCrab, loading: loadingDamagedCrabs } = useDamagedCrabs()
   const { toast } = useToast()
   const sweetAlert = useSweetAlert()
   const [reportDialogOpen, setReportDialogOpen] = useState(false)
+
+  // Fetch stock levels and alerts
+  useEffect(() => {
+    const fetchStockData = async () => {
+      try {
+        const levels = await stockService.getCurrentStockLevels()
+        const alerts = await stockService.getStockAlerts()
+        setStockLevels(levels)
+        setStockAlerts(alerts)
+      } catch (error) {
+        console.error('Error fetching stock data:', error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch stock data",
+          variant: "destructive"
+        })
+      }
+    }
+    fetchStockData()
+  }, [])
 
   // Group entries by box number
   const boxEntries = entries.reduce((acc, entry) => {
@@ -144,6 +173,14 @@ const QualityControlDashboard = () => {
   }
 
   const handleBoxClick = async (boxNumber: string, entry: typeof entries[0] | undefined, deadCrabs: typeof deadCrabEntries, damagedCrabs: typeof damagedCrabEntries) => {
+    // Toggle box selection for bulk release
+    if (entry && !releasedBoxes.has(boxNumber)) {
+      setSelectedBoxesForRelease(prev => {
+        const isSelected = prev.includes(boxNumber)
+        return isSelected ? prev.filter(b => b !== boxNumber) : [...prev, boxNumber]
+      })
+    }
+    
     setSelectedBox(selectedBox === boxNumber ? null : boxNumber)
     
     if (!entry && deadCrabs.length === 0 && damagedCrabs.length === 0) {
@@ -258,6 +295,16 @@ const QualityControlDashboard = () => {
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Quality Control Dashboard</h1>
             <p className="text-muted-foreground">Manage crab stock quality and inventory</p>
+          </div>
+
+          {/* Stock Levels */}
+          <div className="mb-6 sm:mb-8">
+            <StockLevelCard 
+              stockLevels={stockLevels} 
+              onStockClick={(category) => {
+                setShowReleaseDialog(true)
+              }}
+            />
           </div>
 
           {/* Stats Grid */}
@@ -401,18 +448,35 @@ const QualityControlDashboard = () => {
 
             <CreateGRNDialog />
             
-            <CrabStockReleasingDialog
-              trigger={
-                <Button 
-                  variant="outline" 
-                  className="h-12 sm:h-16 border-blue-500 text-blue-600 hover:bg-blue-50 w-full"
-                  size="lg"
-                >
-                  <Package className="mr-2 h-5 w-5" />
-                  Crab Stock Releasing
-                </Button>
-              }
-            />
+            <Button 
+              variant="outline" 
+              className="h-12 sm:h-16 border-blue-500 text-blue-600 hover:bg-blue-50 w-full"
+              size="lg"
+              onClick={() => setShowReleaseDialog(true)}
+            >
+              <ArrowDownToLine className="mr-2 h-5 w-5" />
+              Single Release
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="h-12 sm:h-16 border-blue-500 text-blue-600 hover:bg-blue-50 w-full"
+              size="lg"
+              onClick={() => {
+                if (selectedBoxesForRelease.length === 0) {
+                  toast({
+                    title: "No boxes selected",
+                    description: "Please select boxes to release by clicking on them in the grid.",
+                    variant: "warning"
+                  })
+                  return
+                }
+                setShowBulkReleaseDialog(true)
+              }}
+            >
+              <Package className="mr-2 h-5 w-5" />
+              Bulk Release
+            </Button>
             
             <Button 
               variant="outline" 
@@ -462,6 +526,7 @@ const QualityControlDashboard = () => {
                         flex flex-col items-center justify-center p-1 sm:p-2 text-[8px] sm:text-xs relative
                         ${getBoxColor(boxNumber)}
                         ${selectedBox === boxNumber ? 'ring-2 ring-primary ring-offset-2' : ''}
+                        ${selectedBoxesForRelease.includes(boxNumber) ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
                       `}
                       onClick={() => handleBoxClick(boxNumber, entry, deadCrabsInBox, damagedCrabsInBox)}
                     >
@@ -554,6 +619,33 @@ const QualityControlDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Stock Release Dialogs */}
+      <StockReleaseDialog
+        isOpen={showReleaseDialog}
+        onClose={() => setShowReleaseDialog(false)}
+        onReleased={async () => {
+          const levels = await stockService.getCurrentStockLevels()
+          const alerts = await stockService.getStockAlerts()
+          setStockLevels(levels)
+          setStockAlerts(alerts)
+        }}
+      />
+      <BulkStockReleaseDialog
+        isOpen={showBulkReleaseDialog}
+        onClose={() => {
+          setShowBulkReleaseDialog(false)
+          setSelectedBoxesForRelease([])
+        }}
+        onReleased={async () => {
+          const levels = await stockService.getCurrentStockLevels()
+          const alerts = await stockService.getStockAlerts()
+          setStockLevels(levels)
+          setStockAlerts(alerts)
+          setSelectedBoxesForRelease([])
+        }}
+        selectedBoxes={selectedBoxesForRelease}
+        boxEntries={boxEntries}
+      />
     </>
   )
 }
