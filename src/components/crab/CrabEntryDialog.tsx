@@ -199,7 +199,6 @@ export function CrabEntryDialog({ onSubmit, trigger }: Props) {
                     <FormControl>
                       <Input 
                         type="number" 
-                        step="0.1"
                         readOnly
                         disabled
                         value={field.value ? field.value.toString().replace(/\.?0+$/, '') : '0'}

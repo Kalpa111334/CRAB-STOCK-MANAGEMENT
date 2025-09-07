@@ -132,6 +132,30 @@ export function useCrabEntries() {
     }
   }
 
+  const deleteEntryByBoxNumber = async (boxNumber: string) => {
+    try {
+      const { error } = await supabase
+        .from('crab_entries')
+        .delete()
+        .eq('box_number', boxNumber)
+
+      if (error) throw error
+
+      setEntries(prev => prev.filter(entry => entry.box_number !== boxNumber))
+      toast({
+        title: 'Success',
+        description: `Crab entry with box number ${boxNumber} deleted successfully`,
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete crab entry',
+        variant: 'destructive',
+      })
+      throw error
+    }
+  }
+
   useEffect(() => {
     fetchEntries()
   }, [])
@@ -142,6 +166,7 @@ export function useCrabEntries() {
     fetchEntries,
     addEntry,
     updateEntry,
-    deleteEntry
+    deleteEntry,
+    deleteEntryByBoxNumber
   }
 } 

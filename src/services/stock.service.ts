@@ -55,40 +55,76 @@ export const stockService = {
   // Get current stock levels for all categories
   async getCurrentStockLevels(): Promise<StockLevel[]> {
     try {
-      // Get current stock from purchases
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('purchases')
-        .select('items')
-        .eq('status', 'completed')
+      // Get current stock from crab_entries (the actual inventory)
+      // First try with status column, fallback to without if it doesn't exist
+      let crabData, crabError
+      
+      try {
+        const result = await supabase
+          .from('crab_entries')
+          .select('category, weight_kg, male_count, female_count, health_status, status')
+          .neq('status', 'released')
+        
+        crabData = result.data
+        crabError = result.error
+      } catch (statusError) {
+        // Fallback: try without status column
+        const result = await supabase
+          .from('crab_entries')
+          .select('category, weight_kg, male_count, female_count, health_status')
+        
+        crabData = result.data
+        crabError = result.error
+      }
 
-      if (purchaseError) throw purchaseError
+      if (crabError) throw crabError
 
-      // Get released stock
-      const { data: releaseData, error: releaseError } = await supabase
-        .from('stock_releases')
-        .select('*')
-
-      if (releaseError) throw releaseError
+      // Get released stock (handle case where table doesn't exist)
+      let releaseData = []
+      try {
+        const { data, error } = await supabase
+          .from('stock_releases')
+          .select('*')
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = table doesn't exist
+          throw error
+        }
+        releaseData = data || []
+      } catch (releaseError) {
+        // If stock_releases table doesn't exist, just continue with empty array
+        console.warn('stock_releases table not found, continuing without release data')
+        releaseData = []
+      }
 
       // Calculate available stock by category
       const stockByCategory = new Map<string, StockLevel>()
       const minLevels = this.getMinStockLevels()
       
-      // Add purchased stock
-      purchaseData?.forEach(purchase => {
-        const items = purchase.items as any[] || []
-        items.forEach(item => {
-          const current = stockByCategory.get(item.category) || {
-            category: item.category,
+      // Add crab entries stock
+      if (crabData && crabData.length > 0) {
+        crabData.forEach(entry => {
+          const current = stockByCategory.get(entry.category) || {
+            category: entry.category,
             available_kg: 0,
             available_pieces: 0,
-            min_stock_kg: minLevels[item.category] || 100
+            min_stock_kg: minLevels[entry.category] || 100
           }
-          current.available_kg += item.quantity_kg || 0
-          current.available_pieces += item.pieces_count || 0
-          stockByCategory.set(item.category, current)
+          current.available_kg += entry.weight_kg || 0
+          current.available_pieces += (entry.male_count || 0) + (entry.female_count || 0)
+          stockByCategory.set(entry.category, current)
         })
-      })
+      } else {
+        // If no crab data, return empty stock levels for all categories
+        const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
+        categories.forEach(category => {
+          stockByCategory.set(category, {
+            category,
+            available_kg: 0,
+            available_pieces: 0,
+            min_stock_kg: minLevels[category] || 100
+          })
+        })
+      }
 
       // Subtract released stock
       releaseData?.forEach(release => {

@@ -159,7 +159,6 @@ const CreatePurchase = () => {
                   id="quantity_kg"
                   type="number"
                   min="0"
-                  step="0.01"
                   value={formData.quantity_kg}
                   onChange={(e) => handleChange('quantity_kg', parseFloat(e.target.value) || 0)}
                   placeholder="Enter quantity in kg"
@@ -185,7 +184,6 @@ const CreatePurchase = () => {
                 id="unit_price"
                 type="number"
                 min="0"
-                step="0.01"
                 value={formData.unit_price}
                 onChange={(e) => handleChange('unit_price', parseFloat(e.target.value) || 0)}
                 placeholder="Enter unit price"

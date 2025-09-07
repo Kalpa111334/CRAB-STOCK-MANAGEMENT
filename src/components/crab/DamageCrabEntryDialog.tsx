@@ -154,7 +154,6 @@ export const DamageCrabEntryDialog: React.FC<DamageCrabEntryDialogProps> = ({
                     <FormControl>
                                              <Input
                          type="number"
-                         step="0.0001"
                          {...field}
                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                          placeholder="Enter weight in kg"

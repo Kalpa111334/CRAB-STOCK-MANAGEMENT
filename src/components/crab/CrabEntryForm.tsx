@@ -163,7 +163,6 @@ export const CrabEntryForm: React.FC<CrabEntryFormProps> = ({ onSuccess, initial
               <Input
                 id="weight_kg"
                 type="number"
-                step="0.01"
                 {...register('weight_kg')}
                 className={errors.weight_kg ? 'border-destructive' : ''}
               />

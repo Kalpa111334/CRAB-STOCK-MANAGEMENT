@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Package, AlertTriangle, CheckCircle, Grid3X3, FileText, Share2, Loader2, Skull, Send, ArrowDownToLine } from 'lucide-react'
+import { Plus, Package, AlertTriangle, CheckCircle, Grid3X3, FileText, Share2, Loader2, Skull, Send, ArrowDownToLine, Trash2 } from 'lucide-react'
 import { CrabEntryDialog } from '@/components/crab/CrabEntryDialog'
 import { DeadCrabEntryDialog } from '@/components/crab/DeadCrabEntryDialog'
 import { DamageCrabEntryDialog } from '@/components/crab/DamageCrabEntryDialog'
+import { PermanentDeleteCrabDialog } from '@/components/crab/PermanentDeleteCrabDialog'
 import { StockReleaseDialog } from '@/components/stock/StockReleaseDialog'
 import { BulkStockReleaseDialog } from '@/components/stock/BulkStockReleaseDialog'
 import { StockLevelCard } from '@/components/stock/StockLevelCard'
@@ -447,6 +448,23 @@ const QualityControlDashboard = () => {
             />
 
             <CreateGRNDialog />
+            
+            <PermanentDeleteCrabDialog
+              onSuccess={() => {
+                // Refresh the entries after deletion
+                window.location.reload()
+              }}
+              trigger={
+                <Button 
+                  variant="outline" 
+                  className="h-12 sm:h-16 border-destructive text-destructive hover:bg-destructive/10 w-full"
+                  size="lg"
+                >
+                  <Trash2 className="mr-2 h-5 w-5" />
+                  Delete Crab
+                </Button>
+              }
+            />
             
             <Button 
               variant="outline" 

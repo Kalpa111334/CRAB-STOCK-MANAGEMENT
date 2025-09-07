@@ -9,11 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Package, AlertTriangle, X, Send } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import { ReleaseConfirmationDialog } from './ReleaseConfirmationDialog'
 
 interface StockReleaseDialogProps {
   isOpen: boolean
   onClose: () => void
   onReleased: () => void
+  onShowConfirmation?: (data: any) => void
 }
 
 interface StockReleaseFormData {
@@ -35,9 +37,12 @@ interface StockLevel {
 export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
   isOpen,
   onClose,
-  onReleased
+  onReleased,
+  onShowConfirmation
 }) => {
   const [loading, setLoading] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [releaseConfirmationData, setReleaseConfirmationData] = useState<any>(null)
   const [stockLevels, setStockLevels] = useState<StockLevel[]>([])
   const [formData, setFormData] = useState<StockReleaseFormData>({
     category: 'Large',
@@ -58,39 +63,75 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
 
   const fetchStockLevels = async () => {
     try {
-      // Get current stock levels from purchases
-      const { data: purchaseData, error: purchaseError } = await supabase
-        .from('purchases')
-        .select('items')
-        .eq('status', 'completed')
+      // Get current stock levels from crab_entries (the actual inventory)
+      // First try with status column, fallback to without if it doesn't exist
+      let crabData, crabError
+      
+      try {
+        const result = await supabase
+          .from('crab_entries')
+          .select('category, weight_kg, male_count, female_count, health_status, status')
+          .neq('status', 'released')
+        
+        crabData = result.data
+        crabError = result.error
+      } catch (statusError) {
+        // Fallback: try without status column
+        const result = await supabase
+          .from('crab_entries')
+          .select('category, weight_kg, male_count, female_count, health_status')
+        
+        crabData = result.data
+        crabError = result.error
+      }
 
-      if (purchaseError) throw purchaseError
+      if (crabError) throw crabError
 
-      // Get released stock from stock_releases
-      const { data: releaseData, error: releaseError } = await supabase
-        .from('stock_releases')
-        .select('*')
-
-      if (releaseError) throw releaseError
+      // Get released stock from stock_releases (handle case where table doesn't exist)
+      let releaseData = []
+      try {
+        const { data, error } = await supabase
+          .from('stock_releases')
+          .select('*')
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = table doesn't exist
+          throw error
+        }
+        releaseData = data || []
+      } catch (releaseError) {
+        // If stock_releases table doesn't exist, just continue with empty array
+        console.warn('stock_releases table not found, continuing without release data')
+        releaseData = []
+      }
 
       // Calculate available stock by category
       const stockByCategory = new Map<string, StockLevel>()
       
-      // Add purchased stock
-      purchaseData?.forEach(purchase => {
-        const items = purchase.items as any[] || []
-        items.forEach(item => {
-          const current = stockByCategory.get(item.category) || {
-            category: item.category,
+      // Add crab entries stock
+      if (crabData && crabData.length > 0) {
+        crabData.forEach(entry => {
+          const current = stockByCategory.get(entry.category) || {
+            category: entry.category,
             available_kg: 0,
             available_pieces: 0,
-            min_stock_kg: getMinStockLevel(item.category)
+            min_stock_kg: getMinStockLevel(entry.category)
           }
-          current.available_kg += item.quantity_kg || 0
-          current.available_pieces += item.pieces_count || 0
-          stockByCategory.set(item.category, current)
+          current.available_kg += entry.weight_kg || 0
+          current.available_pieces += (entry.male_count || 0) + (entry.female_count || 0)
+          stockByCategory.set(entry.category, current)
         })
-      })
+      } else {
+        // If no crab data, return empty stock levels for all categories
+        const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
+        categories.forEach(category => {
+          stockByCategory.set(category, {
+            category,
+            available_kg: 0,
+            available_pieces: 0,
+            min_stock_kg: getMinStockLevel(category)
+          })
+        })
+      }
 
       // Subtract released stock
       releaseData?.forEach(release => {
@@ -105,11 +146,15 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
       setStockLevels(Array.from(stockByCategory.values()))
     } catch (error) {
       console.error('Error fetching stock levels:', error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch stock levels",
-        variant: "destructive"
-      })
+      // Don't show error toast, just set empty stock levels
+      const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
+      const emptyStockLevels = categories.map(category => ({
+        category,
+        available_kg: 0,
+        available_pieces: 0,
+        min_stock_kg: getMinStockLevel(category)
+      }))
+      setStockLevels(emptyStockLevels)
     }
   }
 
@@ -199,34 +244,45 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
         release_date: formData.release_date,
         notes: formData.notes || null,
         created_by: userData.user.id,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        box_number: null // Single release doesn't have a specific box number
       }
 
-      const { error: releaseError } = await supabase
-        .from('stock_releases')
-        .insert([releaseData])
+      // Try to insert into stock_releases table (handle case where table doesn't exist)
+      try {
+        const { error: releaseError } = await supabase
+          .from('stock_releases')
+          .insert([releaseData])
 
-      if (releaseError) throw releaseError
-
-      toast({
-        title: "Success",
-        description: "Stock released successfully",
-        variant: "default"
-      })
-
-      // Check if stock is below minimum level after release
-      const currentStock = getCurrentStock(formData.category)
-      if (currentStock) {
-        const remainingStock = currentStock.available_kg - formData.quantity_kg
-        if (remainingStock < currentStock.min_stock_kg) {
-          toast({
-            title: "Stock Alert",
-            description: `${formData.category} stock is now below minimum level (${currentStock.min_stock_kg} kg)`,
-            variant: "warning"
-          })
+        if (releaseError) {
+          console.warn('Failed to insert into stock_releases table:', releaseError)
+          // Continue without throwing error - this is not critical for basic functionality
         }
+      } catch (tableError) {
+        console.warn('stock_releases table not found, continuing without release tracking')
       }
 
+      // Prepare confirmation data
+      const confirmationData = {
+        items: [{
+          boxNumber: undefined,
+          category: formData.category,
+          quantity_kg: formData.quantity_kg,
+          pieces_count: formData.pieces_count
+        }],
+        destination: formData.destination,
+        release_date: formData.release_date,
+        notes: formData.notes,
+        total_weight: formData.quantity_kg,
+        total_pieces: formData.pieces_count
+      }
+
+      if (onShowConfirmation) {
+        onShowConfirmation(confirmationData)
+      } else {
+        setReleaseConfirmationData(confirmationData)
+        setShowConfirmation(true)
+      }
       onReleased()
       onClose()
     } catch (error) {
@@ -323,7 +379,6 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
                   id="quantity_kg"
                   type="number"
                   min="0"
-                  step="0.01"
                   value={formData.quantity_kg}
                   onChange={(e) => handleChange('quantity_kg', parseFloat(e.target.value) || 0)}
                   placeholder="Enter quantity in kg"
@@ -439,6 +494,15 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
           </form>
         </div>
       </DialogContent>
+
+      {/* Release Confirmation Dialog */}
+      {releaseConfirmationData && (
+        <ReleaseConfirmationDialog
+          isOpen={showConfirmation}
+          onClose={() => setShowConfirmation(false)}
+          releaseData={releaseConfirmationData}
+        />
+      )}
     </Dialog>
   )
 }

@@ -387,7 +387,6 @@ export const CreateGRNDialog = () => {
                                 onChange={(e) => handleItemChange(index, 'quantity_kg', parseFloat(e.target.value) || 0)}
                                 className="w-full"
                 min="0"
-                step="0.001"
                 required
               />
             </div>
@@ -401,7 +400,6 @@ export const CreateGRNDialog = () => {
                               onChange={(e) => handleItemChange(index, 'price', e.target.value ? parseFloat(e.target.value) : undefined)}
                               className="w-full"
                               min="0"
-                              step="0.01"
                               placeholder="Enter price (optional)"
               />
             </div>

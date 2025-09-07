@@ -164,7 +164,6 @@ export const EditSaleForm: React.FC<EditSaleFormProps> = ({
               type="number"
               required
               min="0"
-              step="0.01"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
