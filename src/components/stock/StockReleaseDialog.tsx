@@ -158,17 +158,7 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
     }
   }
 
-  const getMinStockLevel = (category: string): number => {
-    // Define minimum stock levels by category (in kg)
-    const minLevels: Record<string, number> = {
-      'Boil': 50,
-      'Large': 100,
-      'XL': 150,
-      'XXL': 200,
-      'Jumbo': 250
-    }
-    return minLevels[category] || 100
-  }
+  // Minimum stock level validation removed - no longer needed
 
   const getCurrentStock = (category: string): StockLevel | undefined => {
     return stockLevels.find(stock => stock.category === category)
@@ -214,11 +204,7 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
       errors.push('Release date is required')
     }
 
-    // Check if release would put stock below minimum level
-    const remainingStock = currentStock.available_kg - formData.quantity_kg
-    if (remainingStock < currentStock.min_stock_kg) {
-      errors.push(`Warning: Release will put stock below minimum level (${currentStock.min_stock_kg} kg)`)
-    }
+    // Minimum stock level validation removed - allow all releases
 
     return errors
   }
@@ -441,17 +427,10 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
                         if (!currentStock) return null
 
                         const remainingStock = currentStock.available_kg - formData.quantity_kg
-                        const belowMin = remainingStock < currentStock.min_stock_kg
-
                         return (
                           <div className="space-y-1 text-sm">
                             <p>Current Stock: {currentStock.available_kg} kg</p>
                             <p>After Release: {remainingStock} kg</p>
-                            {belowMin && (
-                              <p className="text-red-600 font-medium">
-                                Warning: This release will put stock below minimum level ({currentStock.min_stock_kg} kg)
-                              </p>
-                            )}
                           </div>
                         )
                       })()}
