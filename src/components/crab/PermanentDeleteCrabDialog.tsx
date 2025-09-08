@@ -194,6 +194,12 @@ export function PermanentDeleteCrabDialog({ trigger, onSuccess }: Props) {
                     <Label className="text-muted-foreground">Total Pieces</Label>
                     <p className="font-medium">{foundCrab.male_count + foundCrab.female_count}</p>
                   </div>
+                  {foundCrab.date && (
+                    <div>
+                      <Label className="text-muted-foreground">Date Added</Label>
+                      <p className="font-medium">{new Date(foundCrab.date).toLocaleDateString()}</p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="pt-4 border-t">

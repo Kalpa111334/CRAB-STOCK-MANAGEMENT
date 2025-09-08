@@ -381,10 +381,7 @@ const QualityControlDashboard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6 sm:mb-8">
             <CrabEntryDialog
               onSubmit={async (data) => {
-                await addEntry({
-                  ...data,
-                  date: new Date().toISOString()
-                });
+                await addEntry(data);
               }}
               trigger={
                 <Button 
@@ -558,6 +555,11 @@ const QualityControlDashboard = () => {
                           >
                             {entry.category}
                           </Badge>
+                          {entry.date && (
+                            <div className="text-[6px] sm:text-[8px] text-muted-foreground mt-0.5 hidden sm:block">
+                              {new Date(entry.date).toLocaleDateString()}
+                            </div>
+                          )}
                         </>
                       )}
                       {deadCrabsInBox.length > 0 && selectedBox === boxNumber && (

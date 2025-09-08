@@ -26,7 +26,7 @@ const crabStatuses = [
 const reportTypes = ['TSF', 'Dutch_Trails'] as const
 
 const crabEntrySchema = z.object({
-  date: z.string(),
+  date: z.string().min(1, 'Date is required'),
   supplier: z.string().min(1, 'Supplier is required'),
   box_number: z.string().min(1, 'Box number is required'),
   weight_kg: z.coerce.number().positive('Weight must be positive'),

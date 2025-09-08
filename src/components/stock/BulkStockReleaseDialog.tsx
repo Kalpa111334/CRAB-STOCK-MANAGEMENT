@@ -256,6 +256,11 @@ export const BulkStockReleaseDialog: React.FC<BulkStockReleaseDialogProps> = ({
                         <p className="text-sm text-muted-foreground">
                           {box.category} - {box.quantity_kg} kg ({box.pieces_count} pieces)
                         </p>
+                        {boxEntries[box.boxNumber]?.date && (
+                          <p className="text-xs text-muted-foreground">
+                            Added: {new Date(boxEntries[box.boxNumber].date).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <Badge>{box.category}</Badge>
