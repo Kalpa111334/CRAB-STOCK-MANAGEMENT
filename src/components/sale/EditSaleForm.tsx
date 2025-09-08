@@ -163,7 +163,6 @@ export const EditSaleForm: React.FC<EditSaleFormProps> = ({
               onChange={handleInputChange}
               type="number"
               required
-              min="0"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

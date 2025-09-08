@@ -378,7 +378,6 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
                 <Input
                   id="quantity_kg"
                   type="number"
-                  min="0"
                   value={formData.quantity_kg}
                   onChange={(e) => handleChange('quantity_kg', parseFloat(e.target.value) || 0)}
                   placeholder="Enter quantity in kg"
@@ -390,7 +389,6 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
                 <Input
                   id="pieces_count"
                   type="number"
-                  min="0"
                   value={formData.pieces_count}
                   onChange={(e) => handleChange('pieces_count', parseInt(e.target.value) || 0)}
                   placeholder="Enter number of pieces"

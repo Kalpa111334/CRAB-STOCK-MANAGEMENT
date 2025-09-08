@@ -147,7 +147,6 @@ export const DeadCrabEntryDialog: React.FC<DeadCrabEntryDialogProps> = ({
                       <Input 
                         {...field} 
                         type="number" 
-                        min="0" 
                         placeholder="0.00"
                         onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                       />
