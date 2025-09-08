@@ -63,6 +63,20 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
 
   const fetchStockLevels = async () => {
     try {
+      // Initialize with all categories first
+      const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
+      const stockByCategory = new Map<string, StockLevel>()
+      
+      // Initialize all categories with zero stock
+      categories.forEach(category => {
+        stockByCategory.set(category, {
+          category,
+          available_kg: 0,
+          available_pieces: 0,
+          min_stock_kg: 0 // No minimum stock validation
+        })
+      })
+
       // Get current stock levels from crab_entries (the actual inventory)
       // First try with status column, fallback to without if it doesn't exist
       let crabData, crabError
@@ -85,7 +99,10 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
         crabError = result.error
       }
 
-      if (crabError) throw crabError
+      if (crabError) {
+        console.warn('Error fetching crab data:', crabError)
+        // Continue with empty stock levels
+      }
 
       // Get released stock from stock_releases (handle case where table doesn't exist)
       let releaseData = []
@@ -104,32 +121,15 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
         releaseData = []
       }
 
-      // Calculate available stock by category
-      const stockByCategory = new Map<string, StockLevel>()
-      
-      // Add crab entries stock
+      // Add crab entries stock to pre-initialized categories
       if (crabData && crabData.length > 0) {
         crabData.forEach(entry => {
-          const current = stockByCategory.get(entry.category) || {
-            category: entry.category,
-            available_kg: 0,
-            available_pieces: 0,
-            min_stock_kg: getMinStockLevel(entry.category)
+          const current = stockByCategory.get(entry.category)
+          if (current) {
+            current.available_kg += entry.weight_kg || 0
+            current.available_pieces += (entry.male_count || 0) + (entry.female_count || 0)
+            stockByCategory.set(entry.category, current)
           }
-          current.available_kg += entry.weight_kg || 0
-          current.available_pieces += (entry.male_count || 0) + (entry.female_count || 0)
-          stockByCategory.set(entry.category, current)
-        })
-      } else {
-        // If no crab data, return empty stock levels for all categories
-        const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
-        categories.forEach(category => {
-          stockByCategory.set(category, {
-            category,
-            available_kg: 0,
-            available_pieces: 0,
-            min_stock_kg: getMinStockLevel(category)
-          })
         })
       }
 
@@ -146,13 +146,13 @@ export const StockReleaseDialog: React.FC<StockReleaseDialogProps> = ({
       setStockLevels(Array.from(stockByCategory.values()))
     } catch (error) {
       console.error('Error fetching stock levels:', error)
-      // Don't show error toast, just set empty stock levels
+      // Don't show error toast, just set empty stock levels for all categories
       const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
       const emptyStockLevels = categories.map(category => ({
         category,
         available_kg: 0,
         available_pieces: 0,
-        min_stock_kg: getMinStockLevel(category)
+        min_stock_kg: 0 // No minimum stock validation
       }))
       setStockLevels(emptyStockLevels)
     }
