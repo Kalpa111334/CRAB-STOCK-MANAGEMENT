@@ -63,7 +63,7 @@ export const stockService = {
         const result = await supabase
           .from('crab_entries')
           .select('category, weight_kg, male_count, female_count, health_status, status')
-          .neq('status', 'released')
+          .or('status.is.null,status.neq.released')
         
         crabData = result.data
         crabError = result.error

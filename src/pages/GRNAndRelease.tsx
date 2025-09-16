@@ -1,5 +1,6 @@
 import React from 'react'
 import { CreateGRNForm } from '@/components/grn/CreateGRNForm'
+import { BulkGRNDialog } from '@/components/grn/BulkGRNDialog'
 import { ReleaseCrabBoxesSection } from '@/components/stock/ReleaseCrabBoxesSection'
 
 export const GRNAndRelease = () => {
@@ -15,7 +16,10 @@ export const GRNAndRelease = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Create GRN Form */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Create GRN</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Create GRN</h2>
+            <BulkGRNDialog />
+          </div>
           <CreateGRNForm />
         </div>
 

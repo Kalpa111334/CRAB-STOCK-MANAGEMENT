@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Download, Share2, CheckCircle, Package, Calendar, MapPin, FileText } from 'lucide-react'
+import { Download, Share2, CheckCircle, Package, Calendar, MapPin, FileText, Trash2 } from 'lucide-react'
 import html2canvas from 'html2canvas'
 import { useToast } from '@/hooks/use-toast'
 
@@ -89,7 +89,8 @@ export const ReleaseConfirmationDialog: React.FC<ReleaseConfirmationDialogProps>
         `• ${item.boxNumber ? `Box ${item.boxNumber}` : 'General'}: ${item.category} - ${item.quantity_kg}kg (${item.pieces_count} pieces)`
       ).join('\n') +
       (releaseData.notes ? `\n\n📝 Notes: ${releaseData.notes}` : '') +
-      `\n\n✅ Release completed successfully!`
+      `\n\n🗑️ Boxes Emptied: All ${releaseData.items.length} released boxes have been emptied and removed from stock.\n\n` +
+      `✅ Release completed successfully!`
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -125,6 +126,17 @@ export const ReleaseConfirmationDialog: React.FC<ReleaseConfirmationDialogProps>
             </div>
             <p className="text-green-700 text-sm mt-1">
               {releaseData.items.length} box{releaseData.items.length !== 1 ? 'es' : ''} released to {releaseData.destination}
+            </p>
+          </div>
+
+          {/* Box Emptying Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-blue-800 font-medium">
+              <Trash2 className="h-5 w-5" />
+              Boxes Emptied
+            </div>
+            <p className="text-blue-700 text-sm mt-1">
+              All {releaseData.items.length} released box{releaseData.items.length !== 1 ? 'es' : ''} have been emptied and removed from stock calculations.
             </p>
           </div>
 

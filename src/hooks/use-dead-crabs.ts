@@ -102,6 +102,34 @@ export const useDeadCrabs = () => {
 
       setLoading(true)
       
+      // First, verify that the box has a crab entry
+      const { data: crabEntry, error: crabError } = await supabase
+        .from('crab_entries')
+        .select('*')
+        .eq('box_number', data.box_number)
+        .single()
+
+      if (crabError) {
+        if (crabError.code === 'PGRST116') {
+          throw new Error(`No crab entry found in box ${data.box_number}. Please ensure the box contains crabs before recording a dead crab.`)
+        }
+        throw new Error(`Error checking box ${data.box_number}: ${crabError.message}`)
+      }
+
+      if (!crabEntry) {
+        throw new Error(`Box ${data.box_number} is empty. Cannot record dead crab for an empty box.`)
+      }
+
+      // Verify the category matches
+      if (crabEntry.category !== data.category) {
+        throw new Error(`Category mismatch. Box ${data.box_number} contains ${crabEntry.category} crabs, but you're trying to record a ${data.category} dead crab.`)
+      }
+
+      // Verify the weight is reasonable (should not exceed the total weight in the box)
+      if (data.weight_kg > crabEntry.weight_kg) {
+        throw new Error(`Dead crab weight (${data.weight_kg}kg) cannot exceed the total weight in box ${data.box_number} (${crabEntry.weight_kg}kg).`)
+      }
+      
       // First, try to verify the table structure exists
       const { error: schemaError } = await supabase
         .from('dead_crabs')
@@ -131,7 +159,8 @@ export const useDeadCrabs = () => {
         throw new Error('Weight must be a positive number')
       }
 
-      const { error } = await supabase
+      // Insert dead crab record
+      const { error: deadCrabError } = await supabase
         .from('dead_crabs')
         .insert({
           box_number: data.box_number,
@@ -143,22 +172,39 @@ export const useDeadCrabs = () => {
           created_by: user.id // Add the user ID
         })
 
-      if (error) {
-        console.error('Supabase error:', error)
-        if (error.code === '42501') {
+      if (deadCrabError) {
+        console.error('Supabase error:', deadCrabError)
+        if (deadCrabError.code === '42501') {
           throw new Error('You do not have permission to record dead crabs')
-        } else if (error.code === '23502') {
+        } else if (deadCrabError.code === '23502') {
           throw new Error('Missing required fields')
-        } else if (error.code === '23503') {
+        } else if (deadCrabError.code === '23503') {
           throw new Error('Invalid user reference')
         } else {
-          throw new Error(error.message)
+          throw new Error(deadCrabError.message)
         }
+      }
+
+      // Remove the crab entry from the box (make the box empty)
+      const { error: deleteError } = await supabase
+        .from('crab_entries')
+        .delete()
+        .eq('box_number', data.box_number)
+
+      if (deleteError) {
+        console.error('Error removing crab entry from box:', deleteError)
+        // Don't throw error here - the dead crab was recorded successfully
+        // Just log the error and continue
+        toast({
+          title: 'Warning',
+          description: 'Dead crab recorded, but there was an issue removing the crab entry from the box. Please check the box status.',
+          variant: 'destructive',
+        })
       }
 
       toast({
         title: 'Success',
-        description: 'Dead crab entry recorded successfully',
+        description: `Dead crab recorded successfully. Box ${data.box_number} has been emptied.`,
       })
 
       // Refresh the entries

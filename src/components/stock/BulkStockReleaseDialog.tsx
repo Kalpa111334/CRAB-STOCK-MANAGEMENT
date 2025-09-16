@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Package, AlertTriangle, X, Send, ArrowDownToLine } from 'lucide-react'
+import { Loader2, Package, AlertTriangle, X, Send, ArrowDownToLine, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { ReleaseConfirmationDialog } from './ReleaseConfirmationDialog'
@@ -151,20 +151,28 @@ export const BulkStockReleaseDialog: React.FC<BulkStockReleaseDialogProps> = ({
         console.warn('stock_releases table not found, continuing without release tracking')
       }
 
-      // Try to update box status to released (handle case where status column doesn't exist)
+      // Empty the boxes by removing crab entries (this makes the boxes empty)
       try {
-        const { error: boxUpdateError } = await supabase
+        const { error: boxDeleteError } = await supabase
           .from('crab_entries')
-          .update({ status: 'released' })
+          .delete()
           .in('box_number', selectedBoxes.map(box => box.boxNumber))
 
-        if (boxUpdateError) {
-          console.warn('Failed to update crab_entries status:', boxUpdateError)
-          // Continue without throwing error - this is not critical for basic functionality
+        if (boxDeleteError) {
+          console.error('Failed to empty crab boxes:', boxDeleteError)
+          // This is critical for proper stock management, so we should throw an error
+          throw new Error(`Failed to empty released boxes: ${boxDeleteError.message}`)
         }
-      } catch (statusError) {
-        console.warn('status column not found in crab_entries, continuing without status update')
+      } catch (deleteError) {
+        console.error('Error emptying crab boxes:', deleteError)
+        throw new Error('Unable to empty released boxes. Please ensure the database schema is up to date.')
       }
+
+      // Show success message
+      toast({
+        title: "Success",
+        description: `Bulk release completed successfully. ${selectedBoxes.length} boxes have been emptied.`,
+      })
 
       // Prepare confirmation data
       const confirmationData = {
@@ -229,6 +237,20 @@ export const BulkStockReleaseDialog: React.FC<BulkStockReleaseDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Warning Message */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-orange-800 mb-1">Important Notice</h4>
+                <p className="text-sm text-orange-700">
+                  After bulk release, all selected boxes will be <strong>permanently emptied</strong>. 
+                  The crab entries will be removed from the boxes and they will no longer appear in stock calculations.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Selected Boxes Summary */}
           <Card>
             <CardHeader>
@@ -328,8 +350,8 @@ export const BulkStockReleaseDialog: React.FC<BulkStockReleaseDialogProps> = ({
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Release Selected Boxes
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Release & Empty Selected Boxes
                 </>
               )}
             </Button>

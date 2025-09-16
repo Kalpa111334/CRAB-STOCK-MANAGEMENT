@@ -7,8 +7,10 @@ import { CrabEntryDialog } from '@/components/crab/CrabEntryDialog'
 import { DeadCrabEntryDialog } from '@/components/crab/DeadCrabEntryDialog'
 import { DamageCrabEntryDialog } from '@/components/crab/DamageCrabEntryDialog'
 import { PermanentDeleteCrabDialog } from '@/components/crab/PermanentDeleteCrabDialog'
+import { BulkDeleteCrabDialog } from '@/components/crab/BulkDeleteCrabDialog'
 import { StockReleaseDialog } from '@/components/stock/StockReleaseDialog'
 import { BulkStockReleaseDialog } from '@/components/stock/BulkStockReleaseDialog'
+import { BulkGRNDialog } from '@/components/grn/BulkGRNDialog'
 import { StockLevelCard } from '@/components/stock/StockLevelCard'
 import { stockService } from '@/services/stock.service'
 import type { StockLevel, StockAlert } from '@/services/stock.service'
@@ -31,6 +33,8 @@ const QualityControlDashboard = () => {
   const [showReleaseDialog, setShowReleaseDialog] = useState(false)
   const [showBulkReleaseDialog, setShowBulkReleaseDialog] = useState(false)
   const [selectedBoxesForRelease, setSelectedBoxesForRelease] = useState<string[]>([])
+  const [selectedBoxesForDelete, setSelectedBoxesForDelete] = useState<string[]>([])
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false)
   const { entries, loading, addEntry } = useCrabEntries()
   const { entries: deadCrabEntries, addDeadCrab, loading: loadingDeadCrabs } = useDeadCrabs()
   const { entries: damagedCrabEntries, addDamagedCrab, loading: loadingDamagedCrabs } = useDamagedCrabs()
@@ -174,6 +178,15 @@ const QualityControlDashboard = () => {
   }
 
   const handleBoxClick = async (boxNumber: string, entry: typeof entries[0] | undefined, deadCrabs: typeof deadCrabEntries, damagedCrabs: typeof damagedCrabEntries) => {
+    // Handle bulk delete mode
+    if (bulkDeleteMode && entry) {
+      setSelectedBoxesForDelete(prev => {
+        const isSelected = prev.includes(boxNumber)
+        return isSelected ? prev.filter(b => b !== boxNumber) : [...prev, boxNumber]
+      })
+      return
+    }
+    
     // Toggle box selection for bulk release
     if (entry && !releasedBoxes.has(boxNumber)) {
       setSelectedBoxesForRelease(prev => {
@@ -405,6 +418,8 @@ const QualityControlDashboard = () => {
                   cause_of_death: data.cause_of_death,
                   notes: data.notes
                 });
+                // Refresh the page to show updated box status
+                window.location.reload();
               }}
               trigger={
                 <Button 
@@ -446,6 +461,8 @@ const QualityControlDashboard = () => {
 
             <CreateGRNDialog />
             
+            <BulkGRNDialog />
+            
             <PermanentDeleteCrabDialog
               onSuccess={() => {
                 // Refresh the entries after deletion
@@ -458,10 +475,54 @@ const QualityControlDashboard = () => {
                   size="lg"
                 >
                   <Trash2 className="mr-2 h-5 w-5" />
-                  Delete Crab
+                  Single Delete
                 </Button>
               }
             />
+            
+            <Button 
+              variant="outline" 
+              className={`h-12 sm:h-16 w-full ${bulkDeleteMode ? 'bg-destructive/10 border-destructive text-destructive' : 'border-destructive text-destructive hover:bg-destructive/10'}`}
+              size="lg"
+              onClick={() => {
+                setBulkDeleteMode(!bulkDeleteMode)
+                setSelectedBoxesForDelete([])
+                if (bulkDeleteMode) {
+                  toast({
+                    title: "Bulk Delete Mode",
+                    description: "Bulk delete mode disabled. Click on boxes to select them for release.",
+                  })
+                } else {
+                  toast({
+                    title: "Bulk Delete Mode",
+                    description: "Bulk delete mode enabled. Click on boxes to select them for deletion.",
+                  })
+                }
+              }}
+            >
+              <Trash2 className="mr-2 h-5 w-5" />
+              {bulkDeleteMode ? 'Exit Bulk Delete' : 'Bulk Delete Mode'}
+            </Button>
+            
+            {bulkDeleteMode && selectedBoxesForDelete.length > 0 && (
+              <BulkDeleteCrabDialog
+                onSuccess={() => {
+                  setSelectedBoxesForDelete([])
+                  setBulkDeleteMode(false)
+                  window.location.reload()
+                }}
+                trigger={
+                  <Button 
+                    variant="destructive" 
+                    className="h-12 sm:h-16 w-full"
+                    size="lg"
+                  >
+                    <Trash2 className="mr-2 h-5 w-5" />
+                    Delete {selectedBoxesForDelete.length} Selected
+                  </Button>
+                }
+              />
+            )}
             
             <Button 
               variant="outline" 
@@ -520,9 +581,17 @@ const QualityControlDashboard = () => {
               <CardTitle className="flex items-center gap-2">
                 <Grid3X3 className="h-5 w-5 text-primary" />
                 Storage Boxes Grid
+                {bulkDeleteMode && (
+                  <Badge variant="destructive" className="ml-2">
+                    Bulk Delete Mode
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Click on any box to view details or add new entries
+                {bulkDeleteMode 
+                  ? `Click on boxes to select them for deletion. ${selectedBoxesForDelete.length} selected.`
+                  : "Click on any box to view details or add new entries"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -542,6 +611,8 @@ const QualityControlDashboard = () => {
                         ${getBoxColor(boxNumber)}
                         ${selectedBox === boxNumber ? 'ring-2 ring-primary ring-offset-2' : ''}
                         ${selectedBoxesForRelease.includes(boxNumber) ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                        ${selectedBoxesForDelete.includes(boxNumber) ? 'ring-2 ring-red-500 ring-offset-2' : ''}
+                        ${bulkDeleteMode ? 'cursor-pointer hover:ring-2 hover:ring-red-300' : ''}
                       `}
                       onClick={() => handleBoxClick(boxNumber, entry, deadCrabsInBox, damagedCrabsInBox)}
                     >
@@ -648,6 +719,8 @@ const QualityControlDashboard = () => {
           const alerts = await stockService.getStockAlerts()
           setStockLevels(levels)
           setStockAlerts(alerts)
+          // Refresh the page to show updated box status
+          window.location.reload()
         }}
       />
       <BulkStockReleaseDialog

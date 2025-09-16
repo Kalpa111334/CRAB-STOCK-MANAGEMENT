@@ -42,7 +42,8 @@ export const ReleaseCrabBoxesSection = () => {
     try {
       const { data: crabEntries, error } = await supabase
         .from('crab_entries')
-        .select('category, weight_kg, male_count, female_count')
+        .select('category, weight_kg, male_count, female_count, status')
+        .or('status.is.null,status.neq.released')
 
       if (error) throw error
 
