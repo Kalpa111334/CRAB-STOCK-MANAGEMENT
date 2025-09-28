@@ -178,7 +178,7 @@ const AppRoutes = () => {
           } 
         />
         
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to={getDashboardRoute()} replace />} />
       </Routes>
     </>
   );
