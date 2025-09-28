@@ -62,15 +62,30 @@ const QualityControlDashboard = () => {
     fetchStockData()
   }, [])
 
-  // Group entries by box number
-  const boxEntries = entries.reduce((acc, entry) => {
-    acc[entry.box_number] = entry
+  // Helper: normalize box numbers like "001" -> "1", and trim whitespace
+  const normalizeBoxNumber = (value: string | null | undefined) => {
+    const raw = (value ?? '').toString().trim()
+    const num = parseInt(raw, 10)
+    return Number.isFinite(num) ? String(num) : raw
+  }
+
+  // Filter only TSF report entries to avoid inflating counts with other report types
+  const tsfEntries = entries
+    .filter(e => e.report_type === 'TSF')
+    .map(e => ({ ...e, box_number: normalizeBoxNumber(e.box_number) }))
+
+  // Group entries by box number, keeping the latest entry per box
+  // entries are ordered by created_at DESC in useCrabEntries
+  const boxEntries = tsfEntries.reduce((acc, entry) => {
+    if (!acc[entry.box_number]) {
+      acc[entry.box_number] = entry
+    }
     return acc
   }, {} as Record<string, typeof entries[0]>)
 
   const totalBoxes = 290 // Updated from 90 to 290 boxes
-  const filledBoxes = entries.length
-  const damagedBoxes = entries.filter(entry => entry.health_status === 'damaged').length
+  const filledBoxes = Object.keys(boxEntries).length
+  const damagedBoxes = Object.values(boxEntries).filter(entry => entry.health_status === 'damaged').length
   const emptyBoxes = totalBoxes - filledBoxes
   const totalDeadCrabs = deadCrabEntries.length
   const totalDamagedCrabs = damagedCrabEntries.length
@@ -543,7 +558,7 @@ const QualityControlDashboard = () => {
                   toast({
                     title: "No boxes selected",
                     description: "Please select boxes to release by clicking on them in the grid.",
-                    variant: "warning"
+                    variant: "default"
                   })
                   return
                 }

@@ -27,14 +27,60 @@ export const PDFGenerator: React.FC<PDFGeneratorProps> = ({ reportType }) => {
 
   const fetchReportData = async () => {
     try {
+      // Build TSF report directly from crab_entries to match dashboard counts
       const { data, error } = await supabase
-        .from('stock_summary')
-        .select('*')
+        .from('crab_entries')
+        .select('box_number, category, report_type, weight_kg, male_count, female_count, health_status, status, updated_at, created_at')
         .eq('report_type', reportType)
-        .order('category')
+        .or('status.is.null,status.eq.available')
+        .order('created_at', { ascending: false })
 
       if (error) throw error
-      return data || []
+
+      // Normalize box numbers and keep latest entry per box
+      const normalizeBoxNumber = (value: string | null | undefined) => {
+        const raw = (value ?? '').toString().trim()
+        const num = parseInt(raw, 10)
+        return Number.isFinite(num) ? String(num) : raw
+      }
+
+      const latestByBox = new Map<string, any>()
+      ;(data || []).forEach((e) => {
+        const key = normalizeBoxNumber(e.box_number)
+        const prev = latestByBox.get(key)
+        if (!prev) {
+          latestByBox.set(key, e)
+          return
+        }
+        const prevTime = new Date(prev.updated_at || prev.created_at || 0).getTime()
+        const curTime = new Date(e.updated_at || e.created_at || 0).getTime()
+        if (curTime >= prevTime) {
+          latestByBox.set(key, e)
+        }
+      })
+
+      // Aggregate by category
+      const byCategory = new Map<string, ReportData>()
+      Array.from(latestByBox.values()).forEach((e: any) => {
+        const current = byCategory.get(e.category) || {
+          category: e.category,
+          report_type: reportType,
+          total_weight: 0,
+          total_pieces: 0,
+          healthy_pieces: 0,
+          damaged_pieces: 0,
+          last_updated: e.updated_at || e.created_at
+        }
+        current.total_weight += Number(e.weight_kg) || 0
+        const pieces = (Number(e.male_count) || 0) + (Number(e.female_count) || 0)
+        current.total_pieces += pieces
+        if (e.health_status === 'healthy') current.healthy_pieces += pieces
+        if (e.health_status === 'damaged') current.damaged_pieces += pieces
+        current.last_updated = e.updated_at || e.created_at || current.last_updated
+        byCategory.set(e.category, current)
+      })
+
+      return Array.from(byCategory.values()).sort((a, b) => a.category.localeCompare(b.category))
     } catch (error) {
       console.error('Error fetching report data:', error)
       return []

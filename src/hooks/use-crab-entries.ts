@@ -15,6 +15,7 @@ export interface CrabEntry {
   health_status: 'healthy' | 'damaged'
   damaged_details?: string
   report_type: 'TSF' | 'Dutch_Trails'
+  status?: 'available' | 'released' | 'damaged' | 'dead'
   created_by: string
   created_at: string
   updated_at: string
@@ -31,11 +32,38 @@ export function useCrabEntries() {
       const { data, error } = await supabase
         .from('crab_entries')
         .select('*')
+        // Only include boxes that are available (or where status is missing in legacy rows)
+        .or('status.is.null,status.eq.available')
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      setEntries(data || [])
+      // Exclude boxes that were released historically via stock_releases with a recorded box_number
+      let releasedBoxNumbers = new Set<string>()
+      try {
+        const { data: releases } = await supabase
+          .from('stock_releases')
+          .select('box_number')
+          .not('box_number', 'is', null)
+
+        (releases || []).forEach((r: any) => {
+          if (r.box_number) releasedBoxNumbers.add(String(r.box_number))
+        })
+      } catch (_) {
+        // If table missing or query fails, proceed without additional filtering
+      }
+
+      const normalizeBoxNumber = (value: string | null | undefined) => {
+        const raw = (value ?? '').toString().trim()
+        const num = parseInt(raw, 10)
+        return Number.isFinite(num) ? String(num) : raw
+      }
+
+      const filtered = (data || [])
+        .map(e => ({ ...e, box_number: normalizeBoxNumber(e.box_number) }))
+        .filter(e => !releasedBoxNumbers.has(normalizeBoxNumber(e.box_number)))
+
+      setEntries(filtered)
     } catch (error: any) {
       toast({
         title: 'Error',

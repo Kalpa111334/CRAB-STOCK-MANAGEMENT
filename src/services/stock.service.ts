@@ -55,88 +55,40 @@ export const stockService = {
   // Get current stock levels for all categories
   async getCurrentStockLevels(): Promise<StockLevel[]> {
     try {
-      // Get current stock from crab_entries (the actual inventory)
-      // First try with status column, fallback to without if it doesn't exist
-      let crabData, crabError
-      
-      try {
-        const result = await supabase
-          .from('crab_entries')
-          .select('category, weight_kg, male_count, female_count, health_status, status')
-          .or('status.is.null,status.neq.released')
-        
-        crabData = result.data
-        crabError = result.error
-      } catch (statusError) {
-        // Fallback: try without status column
-        const result = await supabase
-          .from('crab_entries')
-          .select('category, weight_kg, male_count, female_count, health_status')
-        
-        crabData = result.data
-        crabError = result.error
-      }
+      // Read aggregated latest, non-released stock per box from stock_summary (TSF by default)
+      const { data, error } = await supabase
+        .from('stock_summary')
+        .select('*')
+        .eq('report_type', 'TSF')
+        .order('category')
 
-      if (crabError) throw crabError
+      if (error) throw error
 
-      // Get released stock (handle case where table doesn't exist)
-      let releaseData = []
-      try {
-        const { data, error } = await supabase
-          .from('stock_releases')
-          .select('*')
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 = table doesn't exist
-          throw error
-        }
-        releaseData = data || []
-      } catch (releaseError) {
-        // If stock_releases table doesn't exist, just continue with empty array
-        console.warn('stock_releases table not found, continuing without release data')
-        releaseData = []
-      }
-
-      // Calculate available stock by category
-      const stockByCategory = new Map<string, StockLevel>()
       const minLevels = this.getMinStockLevels()
-      
-      // Add crab entries stock
-      if (crabData && crabData.length > 0) {
-        crabData.forEach(entry => {
-          const current = stockByCategory.get(entry.category) || {
-            category: entry.category,
-            available_kg: 0,
-            available_pieces: 0,
-            min_stock_kg: minLevels[entry.category] || 100
-          }
-          current.available_kg += entry.weight_kg || 0
-          current.available_pieces += (entry.male_count || 0) + (entry.female_count || 0)
-          stockByCategory.set(entry.category, current)
-        })
-      } else {
-        // If no crab data, return empty stock levels for all categories
-        const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
-        categories.forEach(category => {
-          stockByCategory.set(category, {
+
+      // Map view fields to StockLevel; use total_weight as available kg and healthy_pieces as available pieces
+      const levels: StockLevel[] = (data || []).map((row: any) => ({
+        category: row.category,
+        available_kg: Number(row.total_weight) || 0,
+        available_pieces: Number(row.healthy_pieces) || 0,
+        min_stock_kg: minLevels[row.category] || 100
+      }))
+
+      // Ensure all categories are present even if zero
+      const categories = ['Boil', 'Large', 'XL', 'XXL', 'Jumbo']
+      const byCategory = new Map(levels.map(l => [l.category, l]))
+      categories.forEach(category => {
+        if (!byCategory.has(category)) {
+          byCategory.set(category, {
             category,
             available_kg: 0,
             available_pieces: 0,
             min_stock_kg: minLevels[category] || 100
           })
-        })
-      }
-
-      // Subtract released stock
-      releaseData?.forEach(release => {
-        const current = stockByCategory.get(release.category)
-        if (current) {
-          current.available_kg -= release.quantity_kg || 0
-          current.available_pieces -= release.pieces_count || 0
-          stockByCategory.set(release.category, current)
         }
       })
 
-      return Array.from(stockByCategory.values())
+      return Array.from(byCategory.values())
     } catch (error) {
       console.error('Error getting stock levels:', error)
       throw new Error('Failed to get current stock levels')
